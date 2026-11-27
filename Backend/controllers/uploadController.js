@@ -8,6 +8,66 @@ import Material from "../models/Material.js";
 import mongoose from "mongoose";
 import { getRules, scopeOf } from "../config/community.js";
 import { awardApprovalPoints, getScore } from "../utils/points.js";
+import { head } from "@vercel/blob";
+import { handleUpload } from "@vercel/blob/client";
+
+// Vercel Blob is used when its token is set (on Vercel, after connecting a Blob store).
+// The browser then uploads files straight to Blob, so large PDFs aren't limited by Vercel's request size.
+export const BLOB_ENABLED = () => !!process.env.BLOB_READ_WRITE_TOKEN;
+const MAX_UPLOAD_MB = 50;
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/*",
+  "text/plain",
+];
+// Files of each batch go in their own folder: materials/<batch>/<file>
+const blobFolder = (user) => `materials/${user.branch}-${user.batch}/`;
+
+// ===============================
+// VERCEL BLOB: give the logged-in browser a one-time permission to upload one file
+// ===============================
+export const getBlobUploadToken = async (req, res) => {
+  if (!BLOB_ENABLED()) return res.status(503).json({ message: "File storage isn't set up yet." });
+  try {
+    const result = await handleUpload({
+      body: req.body,
+      request: req,
+      onBeforeGenerateToken: async (pathname) => {
+        if (!pathname.startsWith(blobFolder(req.user))) throw new Error("Invalid upload path");
+        return {
+          allowedContentTypes: ALLOWED_TYPES,
+          maximumSizeInBytes: MAX_UPLOAD_MB * 1024 * 1024,
+          addRandomSuffix: true,
+        };
+      },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// A blob URL is accepted only if it's in this batch's folder of OUR Blob store
+async function verifyBlobUrl(fileUrl, user) {
+  let url;
+  try {
+    url = new URL(fileUrl);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || !url.hostname.endsWith(".public.blob.vercel-storage.com")) return false;
+  if (!decodeURIComponent(url.pathname).startsWith("/" + blobFolder(user))) return false;
+  try {
+    await head(fileUrl); // fails unless the file exists in the store our token belongs to
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // A material inside the user's own branch + batch, or null (other batches' uploads answer "not found")
 const findInScope = (id, user) =>
@@ -42,8 +102,14 @@ export const uploadMaterial = async (req, res) => {
     // Always the uploader's own branch + batch (never taken from the request)
     const { branch, batch } = scopeOf(req.user);
 
-    if (!req.file) {
+    // The file arrives either as multipart (local development) or as a Vercel Blob URL
+    // that the browser already uploaded to
+    const blobUrl = !req.file && BLOB_ENABLED() ? req.body.fileUrl : null;
+    if (!req.file && !blobUrl) {
       return res.status(400).json({ message: "No file uploaded" });
+    }
+    if (blobUrl && !(await verifyBlobUrl(blobUrl, req.user))) {
+      return res.status(400).json({ message: "That file upload couldn't be verified. Please upload it again." });
     }
     if (!title || !String(title).trim()) {
       return res.status(400).json({ message: "Please give the material a title." });
@@ -60,10 +126,15 @@ export const uploadMaterial = async (req, res) => {
       return res.status(409).json({ message: "A material with this title already exists." });
     }
 
-    const filename = `${Date.now()}-${req.file.originalname.replace(/[^\w.-]+/g, "_")}`;
+    const filename = req.file ? `${Date.now()}-${req.file.originalname.replace(/[^\w.-]+/g, "_")}` : null;
     let fileUrl;
 
-    if (bucket) {
+    if (blobUrl) {
+      fileUrl = blobUrl;
+    } else if (process.env.VERCEL) {
+      // Vercel has no permanent disk, so local storage isn't an option there
+      return res.status(503).json({ message: "File storage isn't set up yet." });
+    } else if (bucket) {
       const file = bucket.file(filename);
       await file.save(req.file.buffer, {
         metadata: {

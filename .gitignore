@@ -11,3 +11,6 @@ Backend/storage/
 
 # Real environment values (copy .env.example instead)
 Backend/.env
+
+# Vercel CLI project links
+.vercel

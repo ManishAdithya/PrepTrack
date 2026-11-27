@@ -16,8 +16,6 @@ import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import securityLogRoutes from "./routes/securityLogRoutes.js";
 
-connectDB();
-
 const app = express();
 
 // CORS: allow the frontend on any local port (Vite moves to 3001, 3002... if 3000 is busy),
@@ -31,6 +29,20 @@ app.use(cors({ origin: (origin, cb) => cb(null, isAllowedOrigin(origin)), creden
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Quick check that the API is up (doesn't touch the database)
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// Make sure the database is connected before any route runs (needed on Vercel,
+// where the function can start cold for a request)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch {
+    res.status(503).json({ message: "Database unavailable, please try again in a moment." });
+  }
+});
 
 app.use("/api/users", userRoutes);
 
@@ -46,8 +58,15 @@ app.use("/api/discussions", discussionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/security-logs", securityLogRoutes);
 
-// Uploaded files, when stored locally instead of Firebase
+// Uploaded files, when stored on this computer (local development without Vercel Blob)
 app.use("/files", express.static(LOCAL_STORAGE_DIR));
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// On Vercel the app is exported and run as a serverless function (see api/index.js);
+// everywhere else it runs as a normal server.
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  connectDB().catch(() => process.exit(1));
+}
+
+export default app;

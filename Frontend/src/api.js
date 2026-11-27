@@ -4,8 +4,11 @@ import { demoAdapter } from "./demo/mockApi.js";
 
 export const DEMO_MODE = import.meta.env.VITE_DEMO === "true";
 
+// Same-origin "/api": in development Vite forwards it to the backend on :5000 (vite.config.js),
+// on Vercel the frontend's vercel.json forwards it to the backend project.
+// VITE_API_URL overrides it if the API ever lives somewhere else.
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // <-- backend port
+  baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
 // `npm run demo` serves sample data instead of calling the backend

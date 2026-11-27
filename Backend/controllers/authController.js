@@ -8,7 +8,8 @@ import { getRules, branchFromRoll, batchFromRoll } from "../config/community.js"
 // PUBLIC COMMUNITY RULES (shown on the signup and upload screens)
 // =============================
 export const getPublicRules = (req, res) => {
-  res.json(getRules());
+  // `uploads` tells the frontend how to send files: straight to Vercel Blob, or to this server
+  res.json({ ...getRules(), uploads: process.env.BLOB_READ_WRITE_TOKEN ? "blob" : "local" });
 };
 
 // =============================

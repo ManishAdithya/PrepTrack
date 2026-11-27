@@ -1,6 +1,7 @@
 import express from "express";
 import {
   upload,
+  getBlobUploadToken,
   uploadMaterial,
   getAvailableMaterials,
   getAllMaterials,
@@ -14,6 +15,8 @@ import { adminOnly } from "../middleware/roleMiddleware.js";
 const router = express.Router();
 
 router.post("/", authMiddleware, upload, uploadMaterial);
+// Vercel Blob: one-time permission for the browser to upload a file directly
+router.post("/blob-token", authMiddleware, getBlobUploadToken);
 router.get("/", authMiddleware, getAvailableMaterials);
 
 // Community moderation

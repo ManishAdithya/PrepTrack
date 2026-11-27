@@ -79,19 +79,33 @@ export default function Resources() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("branch", user.branch);
-    formData.append("type", type);
-    formData.append("uploadedBy", user.name);
-    if (examDate) formData.append("examDate", examDate);
-    formData.append("file", file);
-
     setUploading(true);
     try {
-      const { data } = await API.post("/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      let data;
+      if (rules.uploads === "blob") {
+        // Hosted on Vercel: the browser uploads the file straight to Vercel Blob,
+        // then sends the backend just its URL (so large PDFs work)
+        const { upload } = await import("@vercel/blob/client");
+        const me = user.batch ? user : (await API.get("/auth/me")).data;
+        const safeName = file.name.replace(/[^\w.-]+/g, "_");
+        const blob = await upload(`materials/${me.branch}-${me.batch}/${safeName}`, file, {
+          access: "public",
+          handleUploadUrl: `${API.defaults.baseURL}/upload/blob-token`,
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          multipart: file.size > 8 * 1024 * 1024,
+        });
+        ({ data } = await API.post("/upload", { title, type, examDate: examDate || undefined, fileUrl: blob.url }));
+      } else {
+        // Local development: send the file to the backend, which saves it on disk
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("type", type);
+        if (examDate) formData.append("examDate", examDate);
+        formData.append("file", file);
+        ({ data } = await API.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        }));
+      }
 
       // Add only if not rejected
       if (data.material.status !== "rejected") {
@@ -118,7 +132,7 @@ export default function Resources() {
       }
     } catch (err) {
       console.error("Upload failed:", err);
-      toast({ type: "error", title: "Upload failed", description: err.response?.data?.message || "Please try again." });
+      toast({ type: "error", title: "Upload failed", description: err.response?.data?.message || err.message || "Please try again." });
     } finally {
       setUploading(false);
     }

@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/blob": "^2.9.0",
     "axios": "^1.13.2",
     "canvas-confetti": "^1.9.3",
     "framer-motion": "^12.23.24",
