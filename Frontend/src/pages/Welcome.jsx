@@ -29,7 +29,7 @@ export default function Welcome() {
       const { data } = await API.put("/auth/display-name", { displayName });
       updateUser({ name: data.displayName, displayName: data.displayName, needsDisplayName: false });
       window.dispatchEvent(new CustomEvent("user-logged-in"));
-      navigate(user?.role === "admin" ? "/admin" : "/", { replace: true });
+      navigate(user?.isOwner ? "/owner" : user?.role === "admin" ? "/admin" : "/", { replace: true });
     } catch (e2) {
       setErr(e2.response?.data?.message || "Couldn't save that name.");
     } finally {

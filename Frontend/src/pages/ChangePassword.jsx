@@ -31,7 +31,7 @@ export default function ChangePassword() {
       await API.put("/auth/password", { currentPassword: current, newPassword: next });
       updateUser({ mustChangePassword: false });
       toast({ title: "Password changed" });
-      navigate(user.role === "admin" && forced ? "/admin" : forced ? "/" : "/profile", { replace: true });
+      navigate(user.isOwner ? "/owner" : user.role === "admin" && forced ? "/admin" : forced ? "/" : "/profile", { replace: true });
     } catch (e2) {
       setErr(e2.response?.data?.message || "Couldn't change the password.");
     } finally {

@@ -13,7 +13,8 @@ export default function AccountMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const inAdmin = pathname.startsWith("/admin");
-  const isCR = user?.role === "admin";
+  const owner = !!user?.isOwner;
+  const isCR = !owner && user?.role === "admin";
 
   // close on outside tap / Escape / navigation
   useEffect(() => {
@@ -58,9 +59,11 @@ export default function AccountMenu() {
             <div className="truncate text-xs text-zinc-500">{user?.rollNumber}</div>
           </div>
           <div className="py-1">
-            <Link to="/profile" className={item} role="menuitem">
-              <User size={16} className="text-zinc-500" /> My profile
-            </Link>
+            {!owner && (
+              <Link to="/profile" className={item} role="menuitem">
+                <User size={16} className="text-zinc-500" /> My profile
+              </Link>
+            )}
             {isCR &&
               (inAdmin ? (
                 <Link to="/" className={item} role="menuitem">
@@ -71,15 +74,17 @@ export default function AccountMenu() {
                   <ShieldCheck size={16} className="text-accent" /> Open CR portal
                 </Link>
               ))}
-            {user?.isOwner && (
+            {owner && (
               <Link to="/owner" className={item} role="menuitem">
                 <BarChart3 size={16} className="text-accent" /> Owner dashboard
               </Link>
             )}
             <InstallApp className={item} />
-            <Link to={inAdmin ? "/admin/feedback" : "/feedback"} className={item} role="menuitem">
-              <MessageSquareWarning size={16} className="text-zinc-500" /> Send feedback
-            </Link>
+            {!owner && (
+              <Link to={inAdmin ? "/admin/feedback" : "/feedback"} className={item} role="menuitem">
+                <MessageSquareWarning size={16} className="text-zinc-500" /> Send feedback
+              </Link>
+            )}
             <Link to="/change-password" className={item} role="menuitem">
               <KeyRound size={16} className="text-zinc-500" /> Change password
             </Link>

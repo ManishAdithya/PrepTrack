@@ -10,6 +10,8 @@ PrepTrack is run by students, for students. This guide is for the student team t
 | **Trusted uploaders** | Students with **150+ XP**. Their uploads go live instantly. |
 | **Moderators** (admin role) | A small student team (3–5 people). Review uploads, handle reports, post announcements, flag cheaters, add or remove other moderators. |
 
+- **The class CRs are set in advance:** roll numbers in `CR_ROLL_NUMBERS` (default `AM.EN.U4EEE24045,AM.EN.U4EEE24021`, at most 2 per class) join as CRs and land in the CR portal straight after signing up. Everyone else joins as a student and is signed in to their dashboard.
+- **The owner account only sees the owner dashboard** (no student view or CR portal).
 - **Nobody can make themselves a moderator.** Everyone signs up as a student. The first moderator is created with a setup command; after that, moderators promote others from **Admin → Students**.
 - **Uploads go live** when a moderator approves them, **5 classmates mark them Helpful**, or the uploader is trusted.
 - **Bad uploads disappear** after **5 reports** and wait in **Admin → Content Review → Reported**.

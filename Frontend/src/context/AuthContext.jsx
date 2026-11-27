@@ -69,6 +69,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem("token", data.token);
 
       if (u.mustChangePassword) navigate("/change-password", { replace: true });
+      else if (u.isOwner) navigate("/owner", { replace: true });
       else if (u.needsDisplayName) navigate("/welcome", { replace: true });
       else if (u.role === "admin") navigate("/admin", { replace: true });
       else navigate("/", { replace: true });
@@ -91,11 +92,13 @@ export function AuthProvider({ children }) {
     });
   };
 
-  // REGISTER (Signup) — everyone signs up as a student; the backend reads the class from the roll number
+  // REGISTER (Signup) — the backend reads the class from the roll number (the class's named CRs join as CRs).
+  // Then sign straight in: the welcome screen, then the CR portal for CRs or the dashboard for students.
   const register = async ({ name, email, rollNumber, password }) => {
     try {
       await API.post("/auth/register", { name, email, rollNumber, password });
-      navigate("/login", { replace: true, state: { rollNumber } });
+      const signedIn = await login(rollNumber, password);
+      if (!signedIn.ok) navigate("/login", { replace: true, state: { rollNumber } });
       return { ok: true };
     } catch (err) {
       return {

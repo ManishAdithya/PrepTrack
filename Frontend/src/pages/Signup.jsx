@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { User, Mail, Hash, Lock, ArrowRight, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -34,7 +34,6 @@ function IconInput({ icon: Icon, ...props }) {
 
 export default function Signup() {
   const { register } = useAuth();
-  const navigate = useNavigate();
   const toast = useToast();
   const rules = useRules();
 
@@ -69,10 +68,8 @@ export default function Signup() {
     const res = await register({ name, email, rollNumber: roll, branch, password });
     setLoading(false);
 
-    if (res.ok) {
-      toast({ title: "Account created", description: "Sign in to get started." });
-      navigate("/login");
-    } else setErr(res.error || "Signup failed");
+    if (res.ok) toast({ title: "Account created", description: "Welcome to PrepTrack!" });
+    else setErr(res.error || "Signup failed");
   };
 
   const s = password ? strength(password) : -1;

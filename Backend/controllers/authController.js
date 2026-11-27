@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { addSecurityLog } from "./securityLogController.js";
-import { getRules, branchFromRoll, batchFromRoll, rollAllowed } from "../config/community.js";
+import { getRules, branchFromRoll, batchFromRoll, rollAllowed, crRolls, MAX_CRS_PER_BATCH } from "../config/community.js";
 import { BLOB_FLOW } from "./uploadController.js";
 
 // =============================
@@ -59,14 +59,19 @@ export const register = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    // Everyone joins as a student; admins are promoted by an existing admin
+    // Everyone joins as a student, except the class's named CRs (CR_ROLL_NUMBERS), who join as CRs
+    let role = "student";
+    if (crRolls().includes(roll)) {
+      const crs = await User.countDocuments({ branch, batch, role: "admin" });
+      if (crs < MAX_CRS_PER_BATCH) role = "admin";
+    }
     const user = await User.create({
       name,
       email,
       rollNumber: roll,
       branch,
       batch,
-      role: "student",
+      role,
       password: hashed,
     });
 
@@ -75,7 +80,7 @@ export const register = async (req, res) => {
       user._id,
       "Admin Action",
       req.ip,
-      `New account registered (${user.email})`
+      `New account registered (${user.email})${role === "admin" ? " as CR" : ""}`
     );
 
     res.status(201).json({

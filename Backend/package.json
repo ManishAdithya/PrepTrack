@@ -11,7 +11,8 @@
     "make-owner": "node scripts/makeOwner.js",
     "seed": "node scripts/seed.js",
     "seed:clear": "node scripts/seed.js --clear",
-    "fresh-start": "node scripts/freshStart.js"
+    "fresh-start": "node scripts/freshStart.js",
+    "reset-password": "node scripts/resetPassword.js"
   },
   "keywords": [],
   "author": "",

@@ -66,6 +66,10 @@ export function batchFromRoll(roll) {
   return m ? 2000 + Number(m[1]) : null;
 }
 
+// Roll numbers that become CRs as soon as they sign up (comma-separated in CR_ROLL_NUMBERS)
+const DEFAULT_CR_ROLLS = "AM.EN.U4EEE24045,AM.EN.U4EEE24021";
+export const crRolls = () => list(process.env.CR_ROLL_NUMBERS, DEFAULT_CR_ROLLS.split(",")).map((r) => r.toUpperCase());
+
 // Each batch can have at most this many CRs (admins)
 export const MAX_CRS_PER_BATCH = Number(process.env.MAX_CRS_PER_BATCH || 2);
 
