@@ -166,7 +166,7 @@ export default function Discussions() {
               <AnimatePresence mode="popLayout">
                 {visible.map((p) => {
                   const hot = (p.commentsCount || 0) >= 3;
-                  const commenters = [...new Set((p.comments || []).map((c) => c.author))].slice(0, 3);
+                  const commenters = [...new Set((p.comments || []).filter((c) => !c.removed).map((c) => c.author))].slice(0, 3);
                   return (
                     <motion.div
                       key={p._id}

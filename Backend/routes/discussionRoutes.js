@@ -3,7 +3,9 @@ import {
   getDiscussions,
   getDiscussionById,
   createDiscussion,
-  addComment
+  addComment,
+  deleteDiscussion,
+  deleteComment,
 } from "../controllers/discussionController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -20,5 +22,9 @@ router.post("/", authMiddleware, createDiscussion);
 
 // Students: Add comment
 router.post("/:id/comment", authMiddleware, addComment);
+
+// Author or CR: delete a thread, or one reply
+router.delete("/:id", authMiddleware, deleteDiscussion);
+router.delete("/:id/comments/:commentId", authMiddleware, deleteComment);
 
 export default router;

@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Send, MessageCircle, Smile } from "lucide-react";
+import { ArrowLeft, Send, MessageCircle, Smile, Trash2 } from "lucide-react";
 import API from "../api";
 import { useAuth } from "../context/AuthContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
 import Skeleton from "../components/ui/Skeleton.jsx";
+import Modal from "../components/ui/Modal.jsx";
+import { useToast } from "../components/ui/Toast.jsx";
 import { container, item } from "../components/ui/motion.js";
 import { timeAgo } from "../utils/ui.js";
 
@@ -16,7 +18,14 @@ const QUICK_REPLIES = ["Thanks, this helps! 🙏", "Same doubt here 👀", "Can 
 export default function DiscussionDetail() {
   const { id } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const toast = useToast();
   const [post, setPost] = useState(null);
+  // what the confirm box is about to delete: { kind: "thread" } or { kind: "comment", id, text }
+  const [confirm, setConfirm] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const isCR = user?.role === "admin";
+  const isMine = (authorId) => !!authorId && String(authorId) === String(user?.id);
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -57,6 +66,27 @@ export default function DiscussionDetail() {
     }
   };
 
+  const doDelete = async () => {
+    if (!confirm) return;
+    setDeleting(true);
+    try {
+      if (confirm.kind === "thread") {
+        await API.delete(`/discussions/${id}`);
+        toast({ type: "info", title: "Discussion deleted" });
+        navigate("/discussions", { replace: true });
+        return;
+      }
+      const { data } = await API.delete(`/discussions/${id}/comments/${confirm.id}`);
+      setPost(data);
+      toast({ type: "info", title: "Reply deleted" });
+      setConfirm(null);
+    } catch (err) {
+      toast({ type: "error", title: err.response?.data?.message || "Couldn't delete it" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="mx-auto max-w-4xl space-y-4">
@@ -74,6 +104,9 @@ export default function DiscussionDetail() {
       />
     );
 
+  const replies = post.comments.filter((c) => !c.removed).length;
+  const canDeleteThread = isCR || isMine(post.authorId);
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-4xl space-y-5">
       <motion.div variants={item}>
@@ -87,10 +120,19 @@ export default function DiscussionDetail() {
         <div className="absolute inset-0 -z-10 bg-accent/15 " />
         <div className="flex items-center gap-3">
           <Avatar name={post.author} size={44} />
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="font-semibold text-white">{post.author}</div>
             <div className="text-xs text-zinc-400">asked {timeAgo(post.createdAt)}</div>
           </div>
+          {canDeleteThread && (
+            <button
+              onClick={() => setConfirm({ kind: "thread" })}
+              className="btn-ghost !min-h-[36px] !px-3 !py-1.5 text-xs text-rose-300 hover:bg-rose-500/10"
+              aria-label="Delete this discussion"
+            >
+              <Trash2 size={14} /> <span className="hidden sm:inline">Delete</span>
+            </button>
+          )}
         </div>
         <h1 className="mt-4 text-2xl font-bold leading-snug text-white sm:text-3xl">{post.title}</h1>
         {post.body && <p className="mt-3 text-zinc-300">{post.body}</p>}
@@ -105,7 +147,7 @@ export default function DiscussionDetail() {
       <Card className="p-0" spotlight={false}>
         <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
           <h2 className="section-title text-base">
-            <MessageCircle size={17} className="text-accent" /> {post.comments.length} {post.comments.length === 1 ? "reply" : "replies"}
+            <MessageCircle size={17} className="text-accent" /> {replies} {replies === 1 ? "reply" : "replies"}
           </h2>
         </div>
 
@@ -118,10 +160,18 @@ export default function DiscussionDetail() {
           ) : (
             <AnimatePresence initial={false}>
               {post.comments.map((c, i) => {
-                const mine = c.author === user?.name;
+                const mine = isMine(c.authorId) || (!c.authorId && c.author === user?.name);
+                if (c.removed) {
+                  return (
+                    <div key={c._id || i} className={`flex ${mine ? "justify-end" : ""}`}>
+                      <div className="rounded-2xl border border-dashed border-white/10 px-4 py-2 text-xs italic text-zinc-500">Comment removed</div>
+                    </div>
+                  );
+                }
+                const canDelete = isCR || isMine(c.authorId);
                 return (
                   <motion.div
-                    key={i}
+                    key={c._id || i}
                     initial={{ opacity: 0, y: 12, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ type: "spring", stiffness: 300, damping: 26 }}
@@ -131,6 +181,15 @@ export default function DiscussionDetail() {
                     <div className={`max-w-[80%] ${mine ? "items-end text-right" : ""} flex flex-col`}>
                       <div className="mb-1 text-xs text-zinc-400">
                         <span className="font-semibold text-zinc-200">{mine ? "You" : c.author}</span> · {timeAgo(c.createdAt)}
+                        {canDelete && (
+                          <button
+                            onClick={() => setConfirm({ kind: "comment", id: c._id, text: c.text })}
+                            className="ml-2 inline-flex items-center gap-1 text-zinc-500 transition hover:text-rose-300"
+                            aria-label="Delete this reply"
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        )}
                       </div>
                       <div
                         className={`rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed ${
@@ -178,6 +237,22 @@ export default function DiscussionDetail() {
           </form>
         </div>
       </Card>
+
+      <Modal
+        open={!!confirm}
+        onClose={() => !deleting && setConfirm(null)}
+        title={confirm?.kind === "thread" ? "Delete this discussion?" : "Delete this reply?"}
+        subtitle={confirm?.kind === "thread" ? "The question and all its replies are removed for everyone. This can't be undone." : "It shows as \"Comment removed\" for everyone. This can't be undone."}
+        width="max-w-md"
+      >
+        <div className="mb-4 line-clamp-3 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-zinc-300">{confirm?.kind === "thread" ? post.title : confirm?.text}</div>
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setConfirm(null)} disabled={deleting} className="btn-ghost">Keep</button>
+          <button onClick={doDelete} disabled={deleting} className="btn-danger">
+            <Trash2 size={15} /> {deleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </Modal>
     </motion.div>
   );
 }
