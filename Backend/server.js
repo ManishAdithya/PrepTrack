@@ -61,8 +61,9 @@ app.use("/api/security-logs", securityLogRoutes);
 // Uploaded files, when stored on this computer (local development without Vercel Blob)
 app.use("/files", express.static(LOCAL_STORAGE_DIR));
 
-// On Vercel the app is exported and run as a serverless function (see api/index.js);
-// everywhere else it runs as a normal server.
+// On Vercel this file is the "api" service's entrypoint (see vercel.json at the repo root):
+// Vercel runs the exported app as a function and keeps the /api/... paths unchanged.
+// Everywhere else it runs as a normal server.
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
