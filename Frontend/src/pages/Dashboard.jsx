@@ -229,7 +229,7 @@ export default function Dashboard() {
               <Card variants={null} className="divide-y divide-white/[0.06] p-0">
                 {nearby.map((p) => {
                   const r = game.leaders.indexOf(p) + 1;
-                  const me = p.name === name;
+                  const me = !!p.isMe;
                   return (
                     <div key={p.name} className={`flex items-center gap-3 px-4 py-3 ${me ? "bg-accent/[0.06]" : ""}`}>
                       <span className="w-6 font-display text-sm font-bold text-zinc-500">#{r}</span>

@@ -4,33 +4,52 @@ import API from "../api"; // axios instance
 
 const AuthContext = createContext(null);
 
+// Kept in localStorage (not sessionStorage) so closing the tab or the phone browser
+// doesn't log the student out; the token itself expires after 7 days.
+const KEY = "auth_user";
+const readUser = () => {
+  try {
+    const raw = localStorage.getItem(KEY) || sessionStorage.getItem(KEY);
+    return raw && localStorage.getItem("token") ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+const saveUser = (u) => {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(u));
+    sessionStorage.removeItem(KEY);
+  } catch {
+    /* storage blocked: the app still works for this visit */
+  }
+};
+
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
+  const [user, setUser] = useState(readUser);
 
-  const [user, setUser] = useState(() => {
-    const raw = sessionStorage.getItem("auth_user");
-    return raw ? JSON.parse(raw) : null;
-  });
-
-  // LOGIN
-  const login = async (email, password) => {
+  // LOGIN — with a roll number (or an email)
+  const login = async (identifier, password) => {
     try {
-      const { data } = await API.post("/auth/login", { email, password });
+      const { data } = await API.post("/auth/login", { identifier, password });
 
       const u = {
         token: data.token,
-        role: data.role || data.user?.role,
-        email: data.user?.email || email,
+        role: data.role,
+        email: data.email,
         name: data.name,
         branch: data.branch,
         batch: data.batch,
+        rollNumber: data.rollNumber,
+        mustChangePassword: !!data.mustChangePassword,
       };
 
       setUser(u);
-      sessionStorage.setItem("auth_user", JSON.stringify(u));
+      saveUser(u);
       localStorage.setItem("token", data.token);
 
-      if (u.role === "admin") navigate("/admin", { replace: true });
+      if (u.mustChangePassword) navigate("/change-password", { replace: true });
+      else if (u.role === "admin") navigate("/admin", { replace: true });
       else navigate("/", { replace: true });
 
       return { ok: true, role: u.role };
@@ -42,33 +61,20 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // REGISTER (Signup)
-  // Everyone signs up as a student; the backend decides the branch from the roll number
-  const register = async ({ name, email, rollNumber, branch, password }) => {
+  // Update the stored user (e.g. after changing the password)
+  const updateUser = (changes) => {
+    setUser((prev) => {
+      const next = { ...prev, ...changes };
+      saveUser(next);
+      return next;
+    });
+  };
+
+  // REGISTER (Signup) — everyone signs up as a student; the backend reads the class from the roll number
+  const register = async ({ name, email, rollNumber, password }) => {
     try {
-      const { data } = await API.post("/auth/register", {
-        name,
-        email,
-        rollNumber,
-        branch,
-        password,
-      });
-
-      const u = {
-        token: data.token || null,
-        role: data.user?.role || "student",
-        email: data.user?.email || email,
-      };
-
-      if (data.token) {
-        setUser(u);
-        sessionStorage.setItem("auth_user", JSON.stringify(u));
-        localStorage.setItem("token", data.token);
-      }
-
-      // Redirect to login
-      navigate("/login", { replace: true });
-
+      await API.post("/auth/register", { name, email, rollNumber, password });
+      navigate("/login", { replace: true, state: { rollNumber } });
       return { ok: true };
     } catch (err) {
       return {
@@ -81,12 +87,17 @@ export function AuthProvider({ children }) {
   // LOGOUT
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem("auth_user");
-    localStorage.removeItem("token");
+    try {
+      localStorage.removeItem(KEY);
+      sessionStorage.removeItem(KEY);
+      localStorage.removeItem("token");
+    } catch {
+      /* ignore */
+    }
     navigate("/login", { replace: true });
   };
 
-  const value = useMemo(() => ({ user, login, register, logout }), [user]);
+  const value = useMemo(() => ({ user, login, register, logout, updateUser }), [user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

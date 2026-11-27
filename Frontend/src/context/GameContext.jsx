@@ -33,7 +33,7 @@ export function GameProvider({ children }) {
     load();
   }, [load]);
 
-  const index = leaders.findIndex((l) => l.name === user?.name);
+  const index = leaders.findIndex((l) => l.isMe);
   const me = index >= 0 ? leaders[index] : null;
   const xp = me?.score || 0;
   const level = levelFor(xp);

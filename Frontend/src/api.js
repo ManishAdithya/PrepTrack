@@ -23,4 +23,24 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
+// A login that has expired (or an account that was removed) answers 401:
+// clear it and go back to the sign-in page instead of leaving every page half-broken.
+API.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const url = err.config?.url || "";
+    if (err.response?.status === 401 && localStorage.getItem("token") && !url.startsWith("/auth/login")) {
+      try {
+        localStorage.removeItem("token");
+        localStorage.removeItem("auth_user");
+        sessionStorage.removeItem("auth_user");
+      } catch {
+        /* ignore */
+      }
+      if (!window.location.pathname.startsWith("/login")) window.location.assign("/login");
+    }
+    return Promise.reject(err);
+  }
+);
+
 export default API;

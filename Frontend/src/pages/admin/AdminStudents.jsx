@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Users, Search, Mail, Hash, GraduationCap, Gauge, LineChart, UserSearch, ShieldCheck, ShieldOff } from "lucide-react";
+import { Users, Search, Mail, Hash, GraduationCap, Gauge, LineChart, UserSearch, ShieldCheck, ShieldOff, KeyRound } from "lucide-react";
 import API from "../../api";
 import { useUser } from "../../context/UserContext.jsx";
 import { useToast } from "../../components/ui/Toast.jsx";
@@ -27,6 +27,20 @@ export default function AdminStudents() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("name");
   const [confirmRole, setConfirmRole] = useState(null);
+  // forgotten passwords: a CR generates a one-time temporary password for a classmate
+  const [confirmReset, setConfirmReset] = useState(null);
+  const [tempPassword, setTempPassword] = useState(null);
+
+  const resetPassword = async () => {
+    const student = confirmReset;
+    setConfirmReset(null);
+    try {
+      const { data } = await API.put(`/users/${student._id}/reset-password`);
+      setTempPassword(data);
+    } catch (err) {
+      toast({ type: "error", title: err.response?.data?.message || "Couldn't reset the password" });
+    }
+  };
   const { user: me } = useUser();
   const toast = useToast();
 
@@ -207,16 +221,22 @@ export default function AdminStudents() {
                       <span className="chip"><GraduationCap size={12} /> {selected.branch || "N/A"}</span>
                     </div>
                   </div>
-                  {selected._id !== me?._id &&
-                    (selected.role === "admin" ? (
-                      <button onClick={() => setConfirmRole("student")} className="btn-danger shrink-0">
-                        <ShieldOff size={15} /> Remove CR
+                  {selected._id !== me?._id && (
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <button onClick={() => setConfirmReset(selected)} className="btn-ghost">
+                        <KeyRound size={15} /> Reset password
                       </button>
-                    ) : (
-                      <button onClick={() => setConfirmRole("admin")} className="btn-ghost shrink-0">
-                        <ShieldCheck size={15} /> Make CR
-                      </button>
-                    ))}
+                      {selected.role === "admin" ? (
+                        <button onClick={() => setConfirmRole("student")} className="btn-danger">
+                          <ShieldOff size={15} /> Remove CR
+                        </button>
+                      ) : (
+                        <button onClick={() => setConfirmRole("admin")} className="btn-ghost">
+                          <ShieldCheck size={15} /> Make CR
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -295,6 +315,42 @@ export default function AdminStudents() {
           <button onClick={changeRole} className={confirmRole === "admin" ? "btn-primary" : "btn-danger"}>
             {confirmRole === "admin" ? <><ShieldCheck size={15} /> Make CR</> : <><ShieldOff size={15} /> Remove</>}
           </button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!confirmReset}
+        onClose={() => setConfirmReset(null)}
+        title={`Reset ${confirmReset?.name}'s password?`}
+        subtitle="Their old password stops working. You'll get a temporary one to give them in person or by message; they must choose a new password when they sign in."
+        width="max-w-md"
+      >
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setConfirmReset(null)} className="btn-ghost">Cancel</button>
+          <button onClick={resetPassword} className="btn-primary"><KeyRound size={15} /> Reset</button>
+        </div>
+      </Modal>
+
+      <Modal open={!!tempPassword} onClose={() => setTempPassword(null)} title="Temporary password" subtitle="Shown only once. Give it only to this student." width="max-w-md">
+        <div className="space-y-4">
+          <div className="text-sm text-zinc-400">
+            {tempPassword?.name} · <span className="font-mono">{tempPassword?.rollNumber}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 rounded-xl border border-accent/40 bg-ink-900 px-4 py-3 text-center font-mono text-2xl tracking-widest text-accent">
+              {tempPassword?.tempPassword}
+            </code>
+            <button
+              onClick={() => navigator.clipboard?.writeText(tempPassword.tempPassword).then(() => toast({ title: "Copied" }))}
+              className="btn-ghost"
+            >
+              Copy
+            </button>
+          </div>
+          <p className="text-xs text-zinc-500">They sign in with their roll number and this password, then pick a new one.</p>
+          <div className="flex justify-end">
+            <button onClick={() => setTempPassword(null)} className="btn-primary">Done</button>
+          </div>
         </div>
       </Modal>
     </motion.div>

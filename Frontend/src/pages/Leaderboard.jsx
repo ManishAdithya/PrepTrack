@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy, Upload } from "lucide-react";
 import API from "../api";
-import { useUser } from "../context/UserContext.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
@@ -21,8 +19,6 @@ const EARN = [
 ];
 
 export default function Leaderboard() {
-  const { user } = useUser();
-  const { user: authUser } = useAuth();
   const rules = useRules();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,8 +31,7 @@ export default function Leaderboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const myName = user?.name || authUser?.name;
-  const meIdx = list.findIndex((l) => l.name === myName);
+  const meIdx = list.findIndex((l) => l.isMe);
   const me = list[meIdx];
   const ahead = meIdx > 0 ? list[meIdx - 1] : null;
 
@@ -52,7 +47,15 @@ export default function Leaderboard() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader title="Ranks" subtitle="Earn XP when your uploads are approved." />
+      <PageHeader
+        title="Ranks"
+        subtitle="Earn XP when your uploads are approved."
+        actions={
+          <Link to="/profile#privacy" className="text-xs font-semibold text-zinc-400 hover:text-white">
+            Hide my name
+          </Link>
+        }
+      />
 
       {/* Your position */}
       {me && (
@@ -94,13 +97,17 @@ export default function Leaderboard() {
           ) : (
             <ul className="divide-y divide-white/[0.06]">
               {list.map((r, i) => {
-                const isMe = r.name === myName;
+                const isMe = !!r.isMe;
                 return (
                   <li key={r.name + i} className={`flex items-center gap-3 px-4 py-3 sm:px-5 ${isMe ? "bg-accent/[0.06]" : ""}`}>
                     <span className={`w-7 font-display text-base font-bold ${i < 3 ? "text-accent" : "text-zinc-500"}`}>{i + 1}</span>
-                    <Avatar name={r.name} size={34} />
+                    {r.hidden ? (
+                      <div className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full border border-dashed border-white/15 text-sm text-zinc-600">?</div>
+                    ) : (
+                      <Avatar name={r.name} size={34} />
+                    )}
                     <div className="min-w-0 flex-1">
-                      <div className={`truncate text-sm font-semibold ${isMe ? "text-accent" : "text-white"}`}>
+                      <div className={`truncate text-sm font-semibold ${isMe ? "text-accent" : r.hidden ? "italic text-zinc-500" : "text-white"}`}>
                         {r.name}
                         {isMe && " (you)"}
                       </div>

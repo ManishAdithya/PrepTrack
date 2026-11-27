@@ -9,6 +9,7 @@ import {
   Trophy,
   User,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useGame } from "../context/GameContext.jsx";
@@ -55,6 +56,17 @@ function LevelCard() {
 }
 
 export default function Sidebar() {
-  const { logout } = useAuth();
-  return <NavSidebar sections={studentSections} subtitle="Student portal" footer={<LevelCard />} onLogout={logout} />;
+  const { user, logout } = useAuth();
+  const footer = (
+    <>
+      {/* a CR is also a student: they can jump back to the CR portal from here */}
+      {user?.role === "admin" && (
+        <Link to="/admin" className="flex items-center gap-3 rounded-lg border border-accent/30 px-3 py-2.5 text-sm font-medium text-white hover:bg-accent/10">
+          <ShieldCheck size={17} className="text-accent" /> Open CR portal
+        </Link>
+      )}
+      <LevelCard />
+    </>
+  );
+  return <NavSidebar sections={studentSections} subtitle="Student portal" footer={footer} onLogout={logout} />;
 }

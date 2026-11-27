@@ -45,9 +45,16 @@ export const register = async (req, res) => {
     const branch = branchFromRoll(rollNumber);
     const batch = batchFromRoll(rollNumber);
 
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ message: "User already exists" });
+    // One account per email AND per roll number (students log in with their roll number)
+    const roll = String(rollNumber).trim().toUpperCase();
+    if (await User.findOne({ email })) {
+      return res.status(400).json({ message: "An account with this email already exists." });
+    }
+    if (await User.findOne({ rollNumber: roll })) {
+      return res.status(400).json({ message: "This roll number already has an account. Forgot your password? Ask your CR to reset it." });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters." });
     }
 
     const hashed = await bcrypt.hash(password, 10);
@@ -56,7 +63,7 @@ export const register = async (req, res) => {
     const user = await User.create({
       name,
       email,
-      rollNumber: String(rollNumber).trim().toUpperCase(),
+      rollNumber: roll,
       branch,
       batch,
       role: "student",
@@ -92,23 +99,51 @@ export const register = async (req, res) => {
 // =============================
 // LOGIN USER
 // =============================
+const MAX_FAILED_LOGINS = 5;
+const LOCK_MINUTES = 15;
+
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Students sign in with their roll number; an email still works (it contains "@")
+    const id = String(req.body.rollNumber || req.body.identifier || req.body.email || "").trim();
+    const password = String(req.body.password || "");
+    if (!id || !password) {
+      return res.status(400).json({ message: "Enter your roll number and password." });
+    }
+    const user = id.includes("@")
+      ? await User.findOne({ email: id.toLowerCase() })
+      : await User.findOne({ rollNumber: id.toUpperCase() });
 
-    const user = await User.findOne({ email });
-
+    // Same message for "no such account" and "wrong password", so nobody can probe which roll numbers exist
+    const WRONG = "Wrong roll number or password.";
     if (!user) {
-      // SECURITY LOG — Login failure: email not found
-      await addSecurityLog(null, "Login Failure", req.ip, `Email not found: ${email}`);
-      return res.status(400).json({ message: "User not found" });
+      await addSecurityLog(null, "Login Failure", req.ip, `Unknown login: ${id}`);
+      return res.status(400).json({ message: WRONG });
+    }
+
+    // Locked after too many wrong passwords (roll numbers are easy to guess, so passwords must not be)
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const mins = Math.ceil((user.lockedUntil - Date.now()) / 60000);
+      return res.status(429).json({ message: `Too many wrong attempts. Try again in ${mins} min, or ask your CR to reset your password.` });
     }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      // SECURITY LOG — Wrong password
-      await addSecurityLog(user._id, "Login Failure", req.ip, "Wrong password");
-      return res.status(400).json({ message: "Invalid password" });
+      user.failedLogins = (user.failedLogins || 0) + 1;
+      if (user.failedLogins >= MAX_FAILED_LOGINS) {
+        user.lockedUntil = new Date(Date.now() + LOCK_MINUTES * 60000);
+        user.failedLogins = 0;
+        await addSecurityLog(user._id, "Account Lock", req.ip, `Locked for ${LOCK_MINUTES} min after ${MAX_FAILED_LOGINS} wrong passwords`);
+      } else {
+        await addSecurityLog(user._id, "Login Failure", req.ip, "Wrong password");
+      }
+      await user.save();
+      return res.status(400).json({ message: WRONG });
+    }
+    if (user.failedLogins || user.lockedUntil) {
+      user.failedLogins = 0;
+      user.lockedUntil = null;
+      await user.save();
     }
 
     // SECURITY LOG — Successful login
@@ -134,6 +169,8 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       rollNumber: user.rollNumber,
+      // set after a CR resets the password: the app asks for a new one right away
+      mustChangePassword: !!user.mustChangePassword,
     });
   } catch (err) {
     console.error("Login Error:", err);
@@ -146,7 +183,7 @@ export const login = async (req, res) => {
 // =============================
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id).select(PRIVATE_FIELDS);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {
@@ -154,6 +191,9 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+// Never sent to the browser
+const PRIVATE_FIELDS = "-password -failedLogins -lockedUntil";
 
 // =============================
 // UPDATE USER PROFILE
@@ -173,12 +213,14 @@ export const updateProfile = async (req, res) => {
       }
       changes.email = email;
     }
+    // Leaderboard privacy
+    if (req.body.hideFromLeaderboard !== undefined) changes.hideFromLeaderboard = !!req.body.hideFromLeaderboard;
 
     const updated = await User.findByIdAndUpdate(
       req.user.id,
       changes,
       { new: true, runValidators: true }
-    ).select("-password");
+    ).select(PRIVATE_FIELDS);
 
     // SECURITY LOG — Profile update
     await addSecurityLog(req.user.id, "Admin Action", req.ip, "Profile updated");
@@ -186,5 +228,37 @@ export const updateProfile = async (req, res) => {
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: "Error updating profile" });
+  }
+};
+
+// =============================
+// CHANGE PASSWORD
+// Needs the current password — except right after a CR reset (mustChangePassword),
+// when the student just signed in with the temporary one.
+// =============================
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || String(newPassword).length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters." });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.mustChangePassword && !(await bcrypt.compare(String(currentPassword || ""), user.password))) {
+      return res.status(400).json({ message: "Current password is wrong." });
+    }
+    if (await bcrypt.compare(String(newPassword), user.password)) {
+      return res.status(400).json({ message: "Choose a password different from the old one." });
+    }
+
+    user.password = await bcrypt.hash(String(newPassword), 10);
+    user.mustChangePassword = false;
+    await user.save();
+    await addSecurityLog(user._id, "Password Reset", req.ip, "Password changed by the student");
+    res.json({ message: "Password changed" });
+  } catch (err) {
+    console.error("Change Password Error:", err);
+    res.status(500).json({ message: "Error changing password" });
   }
 };

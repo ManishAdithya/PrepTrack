@@ -3,10 +3,11 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { UserProvider } from "./context/UserContext.jsx";
 import { ToastProvider } from "./components/ui/Toast.jsx";
-import { RequireStudent, RequireAdmin } from "./utils/guards.jsx";
+import { RequireStudent, RequireAdmin, RequireLogin } from "./utils/guards.jsx";
 
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
+import ChangePassword from "./pages/ChangePassword.jsx";
 
 // Student pages
 import StudentLayout from "./layouts/StudentLayout.jsx";
@@ -37,6 +38,11 @@ export default function App() {
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+
+            {/* Signed in: change password (forced right after a CR reset) */}
+            <Route element={<RequireLogin />}>
+              <Route path="/change-password" element={<ChangePassword />} />
+            </Route>
 
             {/* STUDENT ROUTES (protected) – the layout stays mounted while pages change */}
             <Route element={<RequireStudent />}>

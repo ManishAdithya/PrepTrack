@@ -1,21 +1,29 @@
 import Leaderboard from "../models/Leaderboard.js";
 import { idsInScope, userInScope } from "../utils/scope.js";
 
-// GET /api/leaderboard — students see only their own batch
+// GET /api/leaderboard — students see only their own class.
+// Students who chose to hide their name appear as "Hidden classmate" to everyone else (they keep their rank).
+// `isMe` marks the caller's own row, so the app never has to match people by name.
 export const getLeaderboard = async (req, res) => {
   try {
     const data = await Leaderboard.find({ studentId: { $in: await idsInScope(req.user) } })
-      .populate("studentId", "name branch email")
+      .populate("studentId", "name branch hideFromLeaderboard")
       .sort({ score: -1 });
 
-    // Format response for the frontend
-    const formatted = data.map((entry, index) => ({
-      name: entry.studentId?.name || "Unknown",
-      branch: entry.studentId?.branch || "—",
-      contributions: entry.contributions || 0,
-      score: entry.score || 0,
-      rank: index + 1,
-    }));
+    const formatted = data.map((entry, index) => {
+      const s = entry.studentId;
+      const isMe = String(s?._id) === String(req.user.id);
+      const hidden = !!s?.hideFromLeaderboard && !isMe;
+      return {
+        name: hidden ? "Hidden classmate" : s?.name || "Unknown",
+        hidden,
+        isMe,
+        branch: s?.branch || "—",
+        contributions: entry.contributions || 0,
+        score: entry.score || 0,
+        rank: index + 1,
+      };
+    });
 
     res.status(200).json(formatted);
   } catch (err) {

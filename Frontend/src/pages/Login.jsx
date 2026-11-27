@@ -1,26 +1,31 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2, FlaskConical } from "lucide-react";
+import { Eye, EyeOff, Hash, Lock, ArrowRight, Loader2, FlaskConical } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { DEMO_MODE } from "../api";
 import AuthShell from "../components/AuthShell.jsx";
+import { exampleRoll, useRules } from "../utils/rules.js";
 
 export default function Login() {
   const { login } = useAuth();
-  const [emailOrRoll, setEmailOrRoll] = useState("");
+  const location = useLocation();
+  const rules = useRules();
+  // right after signup, the roll number is filled in for you
+  const [roll, setRoll] = useState(location.state?.rollNumber || "");
   const [pwd, setPwd] = useState("");
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(0);
+  const [forgot, setForgot] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setErr("");
     setLoading(true);
 
-    const res = await login(emailOrRoll, pwd);
+    const res = await login(roll.trim(), pwd);
 
     if (!res.ok) {
       setErr(res.error || "Login failed");
@@ -29,16 +34,15 @@ export default function Login() {
       return;
     }
 
-    // ⭐ FIX: Trigger user update instantly (NO refresh needed)
+    // let the rest of the app pick up the new user without a refresh
     window.dispatchEvent(new CustomEvent("user-logged-in"));
-
     setLoading(false);
   };
 
   return (
     <AuthShell>
       <h2 className="text-2xl font-bold text-white sm:text-3xl">Sign in</h2>
-      <p className="mt-1 text-sm text-zinc-400">CRs and students use the same login.</p>
+      <p className="mt-1 text-sm text-zinc-400">Use your roll number. CRs sign in the same way.</p>
 
       <motion.form
         key={shake}
@@ -48,27 +52,35 @@ export default function Login() {
         className="mt-6 space-y-4"
       >
         <div>
-          <label className="label">Email</label>
+          <label className="label" htmlFor="login-roll">Roll number</label>
           <div className="relative">
-            <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
-              value={emailOrRoll}
-              onChange={(e) => setEmailOrRoll(e.target.value)}
-              placeholder="you@college.edu"
-              type="email"
-              inputMode="email"
-              className="input pl-11"
+              id="login-roll"
+              value={roll}
+              onChange={(e) => setRoll(e.target.value)}
+              placeholder={exampleRoll(rules.rollFormats[0])}
+              className="input pl-11 uppercase placeholder:normal-case"
               autoComplete="username"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
               required
             />
           </div>
         </div>
 
         <div>
-          <label className="label">Password</label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="label !mb-0" htmlFor="login-password">Password</label>
+            <button type="button" onClick={() => setForgot((f) => !f)} className="text-xs font-semibold text-zinc-400 hover:text-white">
+              Forgot password?
+            </button>
+          </div>
           <div className="relative">
             <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
+              id="login-password"
               type={show ? "text" : "password"}
               value={pwd}
               onChange={(e) => setPwd(e.target.value)}
@@ -89,6 +101,17 @@ export default function Login() {
         </div>
 
         <AnimatePresence>
+          {forgot && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden rounded-xl border border-white/10 bg-ink-900 px-3 py-2.5 text-sm text-zinc-300"
+            >
+              Ask your <b className="text-white">CR</b> to reset it. They'll give you a temporary password — sign in with it and
+              you'll be asked to choose a new one.
+            </motion.div>
+          )}
           {err && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -118,7 +141,7 @@ export default function Login() {
         <div className="mt-5 flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/[0.06] px-3 py-2.5 text-xs text-accent/90">
           <FlaskConical size={14} className="mt-0.5 shrink-0 text-accent" />
           <span>
-            Demo mode: any email and password work. Use an email containing <b>admin</b> to open the admin portal.
+            Demo mode: anything works. Type <b>admin</b> as the roll number to open the CR portal.
           </span>
         </div>
       )}

@@ -1,5 +1,6 @@
+import { Link } from "react-router-dom";
 import React from "react";
-import { LayoutDashboard, FolderOpenDot, Users, Megaphone, Shield, GitBranch, BarChart3 } from "lucide-react";
+import { LayoutDashboard, FolderOpenDot, Users, Megaphone, Shield, GitBranch, BarChart3, GraduationCap } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import NavSidebar from "../NavSidebar.jsx";
 
@@ -28,14 +29,13 @@ export default function AdminSidebar() {
   return (
     <NavSidebar
       sections={adminSections}
-      subtitle="Admin console"
+      subtitle="CR portal"
       onLogout={logout}
       layoutId="admin-nav-active"
       footer={
-        <div className="rounded-2xl border border-accent/20 bg-accent/15 p-4 text-xs text-zinc-300">
-          <div className="mb-1 font-display text-sm font-semibold text-white">Keep it clean ✨</div>
-          Approved materials go live for students on their release date.
-        </div>
+        <Link to="/" className="flex items-center gap-3 rounded-lg border border-white/[0.08] px-3 py-2.5 text-sm font-medium text-zinc-200 hover:border-white/20">
+          <GraduationCap size={17} className="text-accent" /> Switch to student view
+        </Link>
       }
     />
   );

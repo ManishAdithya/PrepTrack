@@ -12,6 +12,7 @@ import Avatar from "../components/ui/Avatar.jsx";
 import Segmented from "../components/ui/Segmented.jsx";
 import AnimatedNumber from "../components/ui/AnimatedNumber.jsx";
 import Skeleton from "../components/ui/Skeleton.jsx";
+import AccountSettings from "../components/AccountSettings.jsx";
 import { container, pop } from "../components/ui/motion.js";
 import { computeBadges, dayKey, getActivity } from "../utils/gamification.js";
 import { celebrate } from "../utils/confetti.js";
@@ -313,6 +314,9 @@ export default function Profile() {
           </div>
         </Card>
       </div>
+
+      {/* Account: leaderboard privacy, password, CR portal, log out */}
+      <AccountSettings profile={profile} onChange={setProfile} />
     </motion.div>
   );
 }

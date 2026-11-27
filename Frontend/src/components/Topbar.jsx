@@ -6,7 +6,7 @@ import { useGame } from "../context/GameContext.jsx";
 import { DEMO_MODE } from "../api";
 import NotificationBell from "./NotificationBell.jsx";
 import FocusChip from "./FocusTimer.jsx";
-import Avatar from "./ui/Avatar.jsx";
+import AccountMenu from "./AccountMenu.jsx";
 import { Brand } from "./NavSidebar.jsx";
 
 export function DemoBadge() {
@@ -72,13 +72,7 @@ export default function Topbar({ onOpenSearch }) {
           </div>
           <NotificationBell />
 
-          <Link to="/profile" className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white/5 md:pr-3" aria-label="Profile">
-            <Avatar name={user?.name || "Student"} size={32} />
-            <div className="hidden leading-tight md:block">
-              <div className="text-sm font-semibold text-white">{user?.name || "User"}</div>
-              <div className="text-xs text-zinc-500">{user?.branch || "—"}{user?.batch ? ` · ${user.batch}` : ""}</div>
-            </div>
-          </Link>
+          <AccountMenu />
         </div>
       </div>
     </header>

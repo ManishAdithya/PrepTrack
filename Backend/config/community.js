@@ -45,9 +45,9 @@ export function getRules() {
     // Students with at least this much XP get their uploads approved instantly
     trustedXp: Number(process.env.TRUSTED_XP || 150),
     // A pending upload goes live once this many classmates upvote it
-    approveUpvotes: Number(process.env.AUTO_APPROVE_UPVOTES || 3),
+    approveUpvotes: Number(process.env.AUTO_APPROVE_UPVOTES || 5),
     // An upload is hidden for moderator review once this many students report it
-    hideReports: Number(process.env.AUTO_HIDE_REPORTS || 3),
+    hideReports: Number(process.env.AUTO_HIDE_REPORTS || 5),
   };
 }
 

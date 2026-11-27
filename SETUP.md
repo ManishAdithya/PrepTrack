@@ -11,8 +11,8 @@ PrepTrack is run by students, for students. This guide is for the student team t
 | **Moderators** (admin role) | A small student team (3–5 people). Review uploads, handle reports, post announcements, flag cheaters, add or remove other moderators. |
 
 - **Nobody can make themselves a moderator.** Everyone signs up as a student. The first moderator is created with a setup command; after that, moderators promote others from **Admin → Students**.
-- **Uploads go live** when a moderator approves them, **3 classmates upvote** them, or the uploader is trusted.
-- **Bad uploads disappear** after **3 reports** and wait in **Admin → Content Review → Reported**.
+- **Uploads go live** when a moderator approves them, **5 classmates mark them Helpful**, or the uploader is trusted.
+- **Bad uploads disappear** after **5 reports** and wait in **Admin → Content Review → Reported**.
 - **Points are only given once an upload is approved** (PYQs +15, notes +10, slides +8), so spamming junk earns nothing.
 
 All the numbers above can be changed in `Backend/.env` — see `Backend/.env.example`.
@@ -54,6 +54,14 @@ All the numbers above can be changed in `Backend/.env` — see `Backend/.env.exa
 ## Opening more branches later
 
 Add roll-number formats to `ALLOWED_ROLL_FORMATS` in `Backend/.env.local` (and in Vercel → Settings → Environment Variables), comma-separated, where `#` is any digit — e.g. `AM.EN.U4EEE24###,AM.EN.U4EEE25###`. Each class (branch + joining year, read from the roll number) only sees its own materials, forum, announcements and leaderboard, and has up to 2 CRs.
+
+## Accounts and passwords
+
+- Students **sign in with their roll number** (any letter case). One account per roll number and per email.
+- **Forgot password:** a CR opens **CR portal → Students → (student) → Reset password** and gets a one-time temporary password to pass on. The student signs in with it and must choose a new one straight away. Students can change their own password from **Profile → Account**.
+- **5 wrong passwords lock an account for 15 minutes** (roll numbers are easy to guess). A CR reset also unlocks it.
+- **Leaderboard privacy:** under **Profile → Account** a student can hide their name; classmates then see "Hidden classmate" (CRs still see real names when moderating).
+- **CRs are students too:** the account menu (tap the avatar) switches between the student view and the CR portal, and has Log out.
 
 ## How readiness and confidence work
 

@@ -260,7 +260,7 @@ class HttpError extends Error {
 // [method, pattern, handler(params, body, me)]
 const routes = [
   ["post", /^\/auth\/login$/, (_, body) => {
-    const isAdmin = String(body?.email || "").toLowerCase().includes("admin");
+    const isAdmin = String(body?.identifier || body?.email || "").toLowerCase().includes("admin");
     const u = isAdmin ? admin : student;
     return {
       token: isAdmin ? "demo-token-admin" : "demo-token-student",
