@@ -13,7 +13,7 @@ import Skeleton from "../../components/ui/Skeleton.jsx";
 import { container, item } from "../../components/ui/motion.js";
 import { SEMESTERS, currentSemester } from "../../utils/exams.js";
 
-// CRs set up the subjects of each semester (S1–S7). Students file their uploads under these.
+// CRs set up the subjects of each semester (S1–S6). Students file their uploads under these.
 export default function AdminSubjects() {
   const { user } = useAuth();
   const toast = useToast();

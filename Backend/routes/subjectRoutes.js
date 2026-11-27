@@ -5,7 +5,7 @@ import { adminOnly } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
-// Everyone in the class: the S1–S7 subject list
+// Everyone in the class: the S1–S6 subject list
 router.get("/", authMiddleware, getSubjects);
 
 // CRs: manage subjects

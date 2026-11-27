@@ -5,7 +5,7 @@ import { scopeOf } from "../config/community.js";
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// GET /api/subjects — the class's subjects for S1–S7, with how many approved/pending uploads each has
+// GET /api/subjects — the class's subjects for S1–S6, with how many approved/pending uploads each has
 export const getSubjects = async (req, res) => {
   try {
     const scope = scopeOf(req.user);
@@ -29,7 +29,7 @@ function readSubject(body) {
   const semester = Number(body.semester);
   if (!name) return { error: "Subject name is required." };
   if (name.length > 80) return { error: "Subject name is too long." };
-  if (!SEMESTERS.includes(semester)) return { error: "Pick a semester from S1 to S7." };
+  if (!SEMESTERS.includes(semester)) return { error: "Pick a semester from S1 to S6." };
   return { data: { name, semester, code: String(body.code || "").trim().slice(0, 20) } };
 }
 

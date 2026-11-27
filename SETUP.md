@@ -60,7 +60,7 @@ Add roll-number formats to `ALLOWED_ROLL_FORMATS` in `Backend/.env.local` (and i
 
 ## Subjects and study materials
 
-- **Study Materials** is sorted **S1 → S7 → subject**. Students open a semester, pick a subject, and see its notes, slides, PYQs and other files.
+- **Study Materials** is sorted **S1 → S6 → subject**. Students open a semester, pick a subject, and see its notes, slides, PYQs and other files.
 - **Only CRs add subjects**, in **CR portal → Subjects**, for any semester. They can rename or remove a subject at any time. Removing a subject keeps its files; they move to that semester's **Unsorted** group.
 - Every upload must be filed under a semester and subject, so set up this semester's subjects **before** sharing the link.
 

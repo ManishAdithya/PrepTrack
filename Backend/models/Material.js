@@ -6,8 +6,8 @@ const materialSchema = new mongoose.Schema(
     branch: { type: String, required: true },
     batch: { type: Number, required: true }, // only this batch can see it
 
-    // where it is filed: semester S1–S7 and a CR-made subject (name kept for display if the subject is removed)
-    semester: { type: Number, min: 1, max: 7, default: null },
+    // where it is filed: semester S1–S6 and a CR-made subject (name kept for display if the subject is removed)
+    semester: { type: Number, min: 1, max: 6, default: null },
     subjectId: { type: mongoose.Schema.Types.ObjectId, ref: "Subject", default: null },
     subject: { type: String, default: "" },
 

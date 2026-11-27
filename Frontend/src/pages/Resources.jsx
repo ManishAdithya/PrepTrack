@@ -31,7 +31,7 @@ const readSem = () => {
   }
 };
 
-// Study materials, filed by semester (S1–S7) → subject (subjects are added by the CR).
+// Study materials, filed by semester (S1–S6) → subject (subjects are added by the CR).
 export default function Resources() {
   const { user } = useAuth();
   const game = useGame();
@@ -65,8 +65,8 @@ export default function Resources() {
   const fileRef = useRef(null);
 
   const trusted = game.xp >= rules.trustedXp;
-  // only some semesters take files (S6 and S7 by default); the rest take links only, to save storage
-  const filesAllowed = (rules.fileSemesters || [6, 7]).includes(upSem);
+  // only some semesters take files (S6 by default); the rest take links only, to save storage
+  const filesAllowed = (rules.fileSemesters || [6]).includes(upSem);
   const upMode = filesAllowed ? mode : "link";
   const [reportTarget, setReportTarget] = useState(null);
   const [reportReason, setReportReason] = useState("");
