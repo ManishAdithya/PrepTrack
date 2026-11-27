@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Upload, ArrowUpRight, Search, UploadCloud, FileCheck2, ThumbsUp, Flag, ShieldCheck, Hourglass, ChevronRight, ArrowLeft, Trash2, FolderOpen, BookOpen, Link2 } from "lucide-react";
+import { Upload, ArrowUpRight, Search, UploadCloud, FileCheck2, ThumbsUp, Flag, ShieldCheck, Hourglass, ChevronRight, ArrowLeft, Trash2, FolderOpen, BookOpen, Link2, Lightbulb } from "lucide-react";
 import API from "../api";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useGame } from "../context/GameContext.jsx";
@@ -236,7 +236,7 @@ export default function Resources() {
       return toast({
         type: "error",
         title: `This file is ${(f.size / 1024 / 1024).toFixed(1)} MB. The limit is ${rules.maxUploadMb} MB.`,
-        description: "Upload it to Google Drive and paste the link here instead.",
+        description: "Tip: save a PPTX as PDF first, it's usually much smaller. Or upload it to Google Drive and paste the link here instead.",
         duration: 6000,
       });
     }
@@ -530,6 +530,15 @@ export default function Resources() {
             <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-zinc-400">
               <Link2 size={14} className="mt-0.5 shrink-0 text-zinc-300" />
               <span>S{upSem} takes links only, to save storage. Share a Google Drive or OneDrive link below.</span>
+            </div>
+          )}
+
+          {upMode === "file" && (
+            <div className="flex items-start gap-2 text-xs leading-relaxed text-zinc-400">
+              <Lightbulb size={14} className="mt-0.5 shrink-0 text-accent" />
+              <span>
+                <span className="font-semibold text-zinc-200">Tip:</span> converting a PPTX to PDF reduces the file size a lot (PowerPoint: File → Save As → PDF).
+              </span>
             </div>
           )}
 
