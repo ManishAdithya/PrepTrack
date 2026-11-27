@@ -7,7 +7,7 @@ import { idsInScope, userInScope } from "../utils/scope.js";
 export const getLeaderboard = async (req, res) => {
   try {
     const data = await Leaderboard.find({ studentId: { $in: await idsInScope(req.user) } })
-      .populate("studentId", "name branch hideFromLeaderboard")
+      .populate("studentId", "name displayName branch hideFromLeaderboard")
       .sort({ score: -1 });
 
     const formatted = data.map((entry, index) => {
@@ -15,7 +15,7 @@ export const getLeaderboard = async (req, res) => {
       const isMe = String(s?._id) === String(req.user.id);
       const hidden = !!s?.hideFromLeaderboard && !isMe;
       return {
-        name: hidden ? "Hidden classmate" : s?.name || "Unknown",
+        name: hidden ? "Hidden classmate" : s?.displayName || s?.name || "Removed student",
         hidden,
         isMe,
         branch: s?.branch || "—",

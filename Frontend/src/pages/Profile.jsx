@@ -74,6 +74,7 @@ export default function Profile() {
   const resetForm = (data) =>
     setFormData({
       name: data.name || "",
+      displayName: data.displayName || "",
       email: data.email || "",
       phone: data.phone || "",
       rollNumber: data.rollNumber || "",
@@ -262,6 +263,7 @@ export default function Profile() {
           <motion.div key={tab} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="grid gap-4 md:grid-cols-2">
             {tab === "personal" ? (
               <>
+                {field("displayName", "Display name (what classmates see)")}
                 {field("name", "Full name")}
                 {field("email", "Contact email", "", "email")}
                 <div className="md:col-span-2">{field("phone", "Phone number", "Add phone number", "tel")}</div>

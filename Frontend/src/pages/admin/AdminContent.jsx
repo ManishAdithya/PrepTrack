@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { FolderOpenDot, Search, CheckCircle2, XCircle, RotateCcw, ExternalLink, Inbox, ThumbsUp, Flag } from "lucide-react";
+import { FolderOpenDot, Search, CheckCircle2, XCircle, RotateCcw, ExternalLink, Inbox, ThumbsUp, Flag, Trash2 } from "lucide-react";
 import API from "../../api";
 import { useToast } from "../../components/ui/Toast.jsx";
 import Card from "../../components/ui/Card.jsx";
@@ -56,6 +56,23 @@ export default function AdminContent() {
   const select = (m) => {
     setSelected(m);
     setReviewNotes(m?.reviewNotes || "");
+  };
+
+  // Remove an upload completely (any status, any time)
+  const handleRemove = async () => {
+    if (!selected || !window.confirm(`Remove "${selected.title}" for everyone? The file is deleted and any XP it earned is taken back.`)) return;
+    setSaving(true);
+    try {
+      await API.delete(`/upload/${selected._id}`);
+      const next = filtered.find((m) => m._id !== selected._id && m.status === selected.status);
+      setMaterials((prev) => prev.filter((m) => m._id !== selected._id));
+      toast({ type: "info", title: "Upload removed", description: selected.title });
+      select(next || null);
+    } catch (err) {
+      toast({ type: "error", title: err.response?.data?.message || "Couldn't remove it" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Handle status update (Approve/Reject/Revision)
@@ -231,6 +248,9 @@ export default function AdminContent() {
                       <XCircle size={16} /> Reject
                     </button>
                   </div>
+                  <button disabled={saving} onClick={handleRemove} className="btn-danger mt-2 w-full">
+                    <Trash2 size={15} /> Remove upload
+                  </button>
                 </motion.div>
               ) : (
                 <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-16 text-center">

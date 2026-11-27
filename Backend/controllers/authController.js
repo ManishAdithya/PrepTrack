@@ -163,15 +163,19 @@ export const login = async (req, res) => {
 
     res.json({
       token,
+      id: user._id,
       role: user.role,
       branch: user.branch,
       batch: user.batch || batchFromRoll(user.rollNumber),
-      name: user.name,
+      name: user.displayName || user.name, // what classmates see
+      fullName: user.name,
       email: user.email,
       rollNumber: user.rollNumber,
       // set after a CR resets the password: the app asks for a new one right away
       mustChangePassword: !!user.mustChangePassword,
       isOwner: !!user.isOwner,
+      displayName: user.displayName || "",
+      needsDisplayName: !user.displayName,
     });
   } catch (err) {
     console.error("Login Error:", err);
@@ -203,6 +207,11 @@ export const updateProfile = async (req, res) => {
   try {
     // Only personal fields; role, branch and roll number can't be self-edited
     const changes = {};
+    if (req.body.displayName !== undefined) {
+      const check = await checkDisplayName(req.body.displayName, req.user);
+      if (check.error) return res.status(400).json({ message: check.error });
+      changes.displayName = check.value;
+    }
     ["name", "phone", "year"].forEach((k) => {
       if (req.body[k] !== undefined) changes[k] = req.body[k];
     });
@@ -261,5 +270,38 @@ export const changePassword = async (req, res) => {
   } catch (err) {
     console.error("Change Password Error:", err);
     res.status(500).json({ message: "Error changing password" });
+  }
+};
+
+// =============================
+// DISPLAY NAME (asked right after signup, changeable in Profile)
+// 2–24 characters, unique within the class, so nobody can pose as a classmate.
+// =============================
+async function checkDisplayName(raw, user) {
+  const value = String(raw || "").trim().replace(/\s+/g, " ");
+  if (value.length < 2 || value.length > 24) return { error: "Display name must be 2–24 characters." };
+  if (!/^[\p{L}\p{N} ._\-]+$/u.test(value)) return { error: "Use letters, numbers, spaces, dots, dashes or underscores." };
+  if (/^(hidden classmate|removed student|admin|cr|owner)$/i.test(value)) return { error: "That name is reserved — pick another." };
+  const esc = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const taken = await User.findOne({
+    _id: { $ne: user.id },
+    branch: user.branch,
+    batch: user.batch,
+    displayName: { $regex: `^${esc}$`, $options: "i" },
+  });
+  if (taken) return { error: "Someone in your class already uses that name." };
+  return { value };
+}
+
+// PUT /api/auth/display-name { displayName }
+export const setDisplayName = async (req, res) => {
+  try {
+    const check = await checkDisplayName(req.body.displayName, req.user);
+    if (check.error) return res.status(400).json({ message: check.error });
+    const user = await User.findByIdAndUpdate(req.user.id, { displayName: check.value }, { new: true }).select(PRIVATE_FIELDS);
+    res.json({ displayName: user.displayName });
+  } catch (err) {
+    console.error("Display Name Error:", err);
+    res.status(500).json({ message: "Error saving display name" });
   }
 };

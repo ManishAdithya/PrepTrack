@@ -1,14 +1,12 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { LogOut, Zap } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 // Logo: black bolt on an electric-yellow tile + bold wordmark
 export function Brand({ subtitle = "", compact = false }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent">
-        <Zap size={19} className="text-black" fill="currentColor" strokeWidth={1.5} />
-      </div>
+      <img src="/logo.svg" alt="PrepTrack logo" width={36} height={36} className="h-9 w-9 shrink-0" />
       {!compact && (
         <div className="leading-tight">
           <div className="font-display text-lg font-bold uppercase tracking-wide text-white">PrepTrack</div>

@@ -6,6 +6,8 @@ import Exam from "../models/Exam.js";
 import Notification from "../models/Notification.js";
 import SecurityLog from "../models/SecurityLog.js";
 import Leaderboard from "../models/Leaderboard.js";
+import Feedback from "../models/Feedback.js";
+import Subject from "../models/Subject.js";
 
 // Owner dashboard: platform-wide totals and trends. Class-level numbers only —
 // no individual student's login history.
@@ -79,6 +81,9 @@ export const getOverview = async (req, res) => {
       mustChange,
       xp,
       dbStats,
+      feedbackNew,
+      feedbackTotal,
+      subjects,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: "admin" }),
@@ -114,6 +119,9 @@ export const getOverview = async (req, res) => {
       User.countDocuments({ mustChangePassword: true }),
       Leaderboard.aggregate([{ $group: { _id: null, total: { $sum: "$score" } } }]),
       mongoose.connection.db.stats(),
+      Feedback.countDocuments({ status: "new" }),
+      Feedback.countDocuments(),
+      Subject.countDocuments(),
     ]);
 
     // active users: distinct existing accounts that signed in
@@ -135,6 +143,8 @@ export const getOverview = async (req, res) => {
 
     // things the owner should look at, most urgent first
     const attention = [];
+    if (feedbackNew) attention.push({ level: "serious", text: `${feedbackNew} new feedback message${feedbackNew > 1 ? "s" : ""} from students — see the inbox below.` });
+    if (!subjects) attention.push({ level: "warning", text: "No subjects added yet — CRs add them in CR portal → Subjects so students can upload." });
     if (pendingAgeHours >= 48) attention.push({ level: "serious", text: `An upload has waited ${Math.floor(pendingAgeHours / 24)} days for CR review.` });
     if (byStatus.reported) attention.push({ level: "serious", text: `${byStatus.reported} upload${byStatus.reported > 1 ? "s are" : " is"} hidden after reports and waiting for a CR decision.` });
     const noCR = classes.filter((c) => c.crs === 0);
@@ -180,6 +190,8 @@ export const getOverview = async (req, res) => {
       security: { failed7, locks30, resets30, lockedNow, mustChange },
       xpTotal: xp[0]?.total || 0,
       storage: { dataMB, usedMB: storageMB, limitMB: DB_LIMIT_MB },
+      feedback: { new: feedbackNew, total: feedbackTotal },
+      subjects,
       attention,
     });
   } catch (err) {

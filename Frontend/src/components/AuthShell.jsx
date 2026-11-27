@@ -21,7 +21,7 @@ export default function AuthShell({ children }) {
           <h1 className="mt-12 text-6xl font-bold uppercase leading-[0.95] tracking-tight text-white">
             Prepare.
             <br />
-            Track.
+            Share.
             <br />
             <span className="text-accent">Score.</span>
           </h1>

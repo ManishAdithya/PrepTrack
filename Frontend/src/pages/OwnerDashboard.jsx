@@ -7,6 +7,7 @@ import API from "../api";
 import { Brand } from "../components/NavSidebar.jsx";
 import AccountMenu from "../components/AccountMenu.jsx";
 import AuroraBackground from "../components/AuroraBackground.jsx";
+import FeedbackInbox from "../components/FeedbackInbox.jsx";
 import Skeleton from "../components/ui/Skeleton.jsx";
 import { container, item } from "../components/ui/motion.js";
 import { examWhen, relative } from "../utils/exams.js";
@@ -164,7 +165,7 @@ export default function OwnerDashboard() {
               <Tile label="Active this week" value={d.users.active7} sub={`${d.users.students ? Math.round((d.users.active7 / d.users.students) * 100) : 0}% of students`} />
               <Tile label="Uploads" value={d.content.total} sub={`${d.content.byStatus.pending} waiting for review`} />
               <Tile label="Forum posts" value={d.forum.discussions} sub={`${forumWeeks.at(-1)?.comments || 0} comments this week`} />
-              <Tile label="Upcoming exams" value={d.exams.upcoming} sub={`${d.announcements30} announcements in 30 days`} />
+              <Tile label="Upcoming exams" value={d.exams.upcoming} sub={`${d.subjects ?? 0} subjects set up`} />
             </motion.div>
 
             {/* needs attention */}
@@ -191,6 +192,10 @@ export default function OwnerDashboard() {
                   })}
                 </ul>
               )}
+            </Panel>
+
+            <Panel title="Feedback inbox" sub={`Issues, ideas and comments sent from the app · ${d.feedback?.new || 0} new`}>
+              <FeedbackInbox />
             </Panel>
 
             <div className="grid gap-5 lg:grid-cols-2">

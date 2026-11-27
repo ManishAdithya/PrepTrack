@@ -8,6 +8,7 @@ import {
   updateMaterialStatus,
   toggleUpvote,
   reportMaterial,
+  deleteMaterial,
 } from "../controllers/uploadController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { adminOnly } from "../middleware/roleMiddleware.js";
@@ -26,5 +27,6 @@ router.post("/:id/report", authMiddleware, reportMaterial);
 // Admin-only routes
 router.get("/all", authMiddleware, adminOnly, getAllMaterials);
 router.put("/:id/status", authMiddleware, adminOnly, updateMaterialStatus);
+router.delete("/:id", authMiddleware, adminOnly, deleteMaterial);
 
 export default router;

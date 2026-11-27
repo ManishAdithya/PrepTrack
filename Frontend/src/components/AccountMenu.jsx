@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, ChevronDown, GraduationCap, KeyRound, LogOut, ShieldCheck, User } from "lucide-react";
+import { BarChart3, MessageSquareWarning, ChevronDown, GraduationCap, KeyRound, LogOut, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import Avatar from "./ui/Avatar.jsx";
+import InstallApp from "./InstallApp.jsx";
 
 // Avatar button + menu, in the top bar of both portals (also on phones, where there is no sidebar).
 // CRs are students too, so they can switch between their student view and the CR portal here.
@@ -75,6 +76,10 @@ export default function AccountMenu() {
                 <BarChart3 size={16} className="text-accent" /> Owner dashboard
               </Link>
             )}
+            <InstallApp className={item} />
+            <Link to={inAdmin ? "/admin/feedback" : "/feedback"} className={item} role="menuitem">
+              <MessageSquareWarning size={16} className="text-zinc-500" /> Send feedback
+            </Link>
             <Link to="/change-password" className={item} role="menuitem">
               <KeyRound size={16} className="text-zinc-500" /> Change password
             </Link>

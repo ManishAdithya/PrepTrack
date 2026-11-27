@@ -13,6 +13,8 @@ import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import examRoutes from "./routes/examRoutes.js";
 import ownerRoutes from "./routes/ownerRoutes.js";
+import subjectRoutes from "./routes/subjectRoutes.js";
+import feedbackRoutes from "./routes/feedbackRoutes.js";
 
 const app = express();
 
@@ -53,6 +55,8 @@ app.use("/api/discussions", discussionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/owner", ownerRoutes);
+app.use("/api/subjects", subjectRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 // Uploaded files, when stored on this computer (local development without Vercel Blob)
 app.use("/files", express.static(LOCAL_STORAGE_DIR));

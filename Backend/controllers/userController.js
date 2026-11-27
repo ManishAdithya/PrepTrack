@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import Material from "../models/Material.js";
+import Discussion from "../models/Discussion.js";
+import Leaderboard from "../models/Leaderboard.js";
 import { addSecurityLog } from "./securityLogController.js";
 import { scopeOf, MAX_CRS_PER_BATCH } from "../config/community.js";
 import { userInScope } from "../utils/scope.js";
@@ -90,5 +93,44 @@ export const resetUserPassword = async (req, res) => {
   } catch (err) {
     console.error("Reset Password Error:", err);
     res.status(500).json({ message: "Error resetting password" });
+  }
+};
+
+// DELETE /api/users/:id — a CR removes a student from the class at any time.
+// The account is deleted (they can no longer sign in) and they leave the leaderboard.
+// What they shared stays for the class: uploads, forum posts and comments now show "Removed student".
+export const removeStudent = async (req, res) => {
+  try {
+    if (String(req.params.id) === String(req.user.id)) {
+      return res.status(400).json({ message: "You can't remove yourself." });
+    }
+    const user = await userInScope(req.params.id, req.user);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role === "admin") {
+      return res.status(400).json({ message: "Remove their CR role first, then remove them." });
+    }
+    if (user.isOwner) return res.status(400).json({ message: "This account can't be removed here." });
+
+    const shownAs = [user.displayName, user.name].filter(Boolean);
+    const REMOVED = "Removed student";
+    const scope = scopeOf(user);
+
+    await Promise.all([
+      Material.updateMany({ uploaderId: user._id }, { $set: { uploadedBy: REMOVED } }),
+      Discussion.updateMany({ ...scope, author: { $in: shownAs } }, { $set: { author: REMOVED } }),
+      Discussion.updateMany(
+        { ...scope, "comments.author": { $in: shownAs } },
+        { $set: { "comments.$[c].author": REMOVED } },
+        { arrayFilters: [{ "c.author": { $in: shownAs } }] }
+      ),
+      Leaderboard.deleteOne({ studentId: user._id }),
+    ]);
+    await user.deleteOne();
+
+    await addSecurityLog(req.user.id, "Admin Action", req.ip, `CR removed ${user.rollNumber} from the class`);
+    res.json({ message: `${user.name} was removed`, id: String(user._id) });
+  } catch (err) {
+    console.error("Remove Student Error:", err);
+    res.status(500).json({ message: "Error removing student" });
   }
 };

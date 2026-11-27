@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-  name: String,
+  name: String, // full name (seen by CRs)
+  // shown to classmates: leaderboard, uploads, forum, announcements. Chosen right after signup.
+  displayName: { type: String, default: "", trim: true },
   email: { type: String, unique: true },
   rollNumber: { type: String, index: true }, // students sign in with this; one account per roll number
   branch: String,

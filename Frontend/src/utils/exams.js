@@ -58,3 +58,15 @@ export const examFacts = (e) =>
   ]
     .filter(Boolean)
     .join(" · ");
+
+// ---- semesters (S1–S7) ----
+export const SEMESTERS = [1, 2, 3, 4, 5, 6, 7];
+
+// The semester a batch is in now: Jul–Dec is the odd semester of the year, Jan–Jun the even one.
+// e.g. 2024 batch in Nov 2026 -> 3rd year, odd -> S5
+export function currentSemester(batch, now = new Date()) {
+  if (!batch) return 1;
+  const year = now.getFullYear() - batch + (now.getMonth() >= 6 ? 1 : 0);
+  const sem = now.getMonth() >= 6 ? year * 2 - 1 : year * 2;
+  return Math.min(7, Math.max(1, sem));
+}

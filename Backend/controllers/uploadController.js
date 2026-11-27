@@ -8,6 +8,10 @@ import Material from "../models/Material.js";
 import mongoose from "mongoose";
 import { getRules, scopeOf } from "../config/community.js";
 import { awardApprovalPoints, getScore } from "../utils/points.js";
+import Subject from "../models/Subject.js";
+import Leaderboard from "../models/Leaderboard.js";
+import { POINTS } from "../config/community.js";
+import { del } from "@vercel/blob";
 import { head, issueSignedToken } from "@vercel/blob";
 import { handleUpload, handleUploadPresigned } from "@vercel/blob/client";
 
@@ -137,11 +141,22 @@ export const uploadMaterial = async (req, res) => {
     if (!title || !String(title).trim()) {
       return res.status(400).json({ message: "Please give the material a title." });
     }
+    if (!["note", "ppt", "pyq", "other"].includes(type)) {
+      return res.status(400).json({ message: "Pick what kind of file it is." });
+    }
+    // every upload is filed under one of the class's subjects (made by the CR)
+    const subject = mongoose.isValidObjectId(req.body.subjectId)
+      ? await Subject.findOne({ _id: req.body.subjectId, branch, batch })
+      : null;
+    if (!subject) {
+      return res.status(400).json({ message: "Pick the semester and subject this belongs to." });
+    }
 
-    // block exact duplicates (same title in the same branch + batch)
+    // block exact duplicates (same title in the same subject)
     const duplicate = await Material.findOne({
       branch,
       batch,
+      subjectId: subject._id,
       title: { $regex: `^${escapeRegex(title.trim())}$`, $options: "i" },
       status: { $ne: "rejected" },
     });
@@ -192,6 +207,9 @@ export const uploadMaterial = async (req, res) => {
       title: title.trim(),
       branch,
       batch,
+      semester: subject.semester,
+      subjectId: subject._id,
+      subject: subject.name,
       type,
       uploadedBy: req.user.name,
       uploaderId: req.user.id,
@@ -355,5 +373,39 @@ export const updateMaterialStatus = async (req, res) => {
   } catch (err) {
     console.error("Update Material Status Error:", err);
     res.status(500).json({ message: "Error updating material status" });
+  }
+};
+
+// ===============================
+// CR: DELETE AN UPLOAD (any time, any status)
+// Removes the record and its file, and takes back any XP it earned.
+// ===============================
+export const deleteMaterial = async (req, res) => {
+  try {
+    const material = await findInScope(req.params.id, req.user);
+    if (!material) return res.status(404).json({ message: "Material not found" });
+
+    if (material.pointsAwarded && material.uploaderId) {
+      await Leaderboard.updateOne(
+        { studentId: material.uploaderId },
+        { $inc: { score: -(POINTS[material.type] || 10), contributions: -1 } }
+      );
+    }
+
+    // best effort: a missing file must not block removing the listing
+    try {
+      if (material.fileUrl.includes(".blob.vercel-storage.com/")) await del(material.fileUrl);
+      else if (material.fileUrl.includes("/files/")) {
+        await fs.unlink(path.join(LOCAL_STORAGE_DIR, path.basename(material.fileUrl.split("/files/")[1])));
+      }
+    } catch (e) {
+      console.warn("File cleanup skipped:", e.message);
+    }
+
+    await material.deleteOne();
+    res.json({ message: "Upload removed" });
+  } catch (err) {
+    console.error("Delete Material Error:", err);
+    res.status(500).json({ message: "Error removing upload" });
   }
 };

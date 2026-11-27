@@ -52,7 +52,7 @@ export function getRules() {
 }
 
 // Leaderboard points per material type, awarded once the upload is approved
-export const POINTS = { pyq: 15, note: 10, ppt: 8 };
+export const POINTS = { pyq: 15, note: 10, ppt: 8, other: 5 };
 
 // "AM.EN.U4EEE24140" -> "EEE"
 export function branchFromRoll(roll) {

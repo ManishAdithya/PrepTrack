@@ -1,4 +1,4 @@
-import { FileText, Presentation, FileQuestion, LogIn, AlertTriangle, KeyRound, Ban, UserCog } from "lucide-react";
+import { FileText, Presentation, FileQuestion, LogIn, AlertTriangle, KeyRound, Ban, UserCog, FolderOpen } from "lucide-react";
 
 export const materialTypes = {
   note: {
@@ -21,6 +21,13 @@ export const materialTypes = {
     gradient: "bg-white/[0.06]",
     chip: "border-accent/25 bg-accent/10 text-accent",
     glow: "rgba(232,121,249,0.16)",
+  },
+  other: {
+    label: "Other",
+    icon: FolderOpen,
+    gradient: "bg-white/[0.06]",
+    chip: "border-white/10 bg-white/[0.04] text-zinc-300",
+    glow: "rgba(255,255,255,0.08)",
   },
 };
 

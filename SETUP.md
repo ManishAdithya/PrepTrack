@@ -13,7 +13,8 @@ PrepTrack is run by students, for students. This guide is for the student team t
 - **Nobody can make themselves a moderator.** Everyone signs up as a student. The first moderator is created with a setup command; after that, moderators promote others from **Admin → Students**.
 - **Uploads go live** when a moderator approves them, **5 classmates mark them Helpful**, or the uploader is trusted.
 - **Bad uploads disappear** after **5 reports** and wait in **Admin → Content Review → Reported**.
-- **Points are only given once an upload is approved** (PYQs +15, notes +10, slides +8), so spamming junk earns nothing.
+- **Points are only given once an upload is approved** (PYQs +15, notes +10, slides +8, other +5), so spamming junk earns nothing.
+- **CRs can remove any upload or any student at any time.** A removed student's account is deleted, but their uploads and posts stay, shown as "Removed student".
 
 All the numbers above can be changed in `Backend/.env` — see `Backend/.env.example`.
 
@@ -54,6 +55,29 @@ All the numbers above can be changed in `Backend/.env` — see `Backend/.env.exa
 ## Opening more branches later
 
 Add roll-number formats to `ALLOWED_ROLL_FORMATS` in `Backend/.env.local` (and in Vercel → Settings → Environment Variables), comma-separated, where `#` is any digit — e.g. `AM.EN.U4EEE24###,AM.EN.U4EEE25###`. Each class (branch + joining year, read from the roll number) only sees its own materials, forum, announcements and leaderboard, and has up to 2 CRs.
+
+## Subjects and study materials
+
+- **Study Materials** is sorted **S1 → S7 → subject**. Students open a semester, pick a subject, and see its notes, slides, PYQs and other files.
+- **Only CRs add subjects**, in **CR portal → Subjects**, for any semester. They can rename or remove a subject at any time. Removing a subject keeps its files; they move to that semester's **Unsorted** group.
+- Every upload must be filed under a semester and subject, so set up this semester's subjects **before** sharing the link.
+
+## Display names, welcome and feedback
+
+- Right after signing up (and on the first sign-in of older accounts), everyone sees a short welcome and picks a **display name** (2–24 letters, numbers, spaces, `. _ -`; unique in the class). It is used on the leaderboard, forum and uploads. It can be changed later in **Profile**.
+- **Feedback:** students (**Feedback** in the menu) and CRs (**CR portal → Feedback**) can send an issue, improvement or comment. It lands in the **Feedback inbox** on the owner dashboard with their name, roll number, email, role, device, page and time.
+- **Owner dashboard:** only the account marked as owner can open it. Mark yours once:
+  ```bash
+  npm --prefix Backend run make-owner -- your.email@college.edu
+  ```
+
+## Installing it as an app
+
+PrepTrack is a PWA, so no store is needed. On a laptop (Chrome or Edge), click the install icon in the address bar or **account menu → Install app**. On Android, use **Install app** or browser menu → *Add to Home screen*. On an iPhone, Safari → Share → *Add to Home Screen*. The app always loads the live site, so every deploy shows up straight away.
+
+## Starting fresh
+
+`npm --prefix Backend run fresh-start -- your.email@college.edu` shows what would be deleted; add `--yes` to delete everything except the accounts you name. Files already in Vercel Blob stay until you clear them in Vercel → Storage → Blob. (`npm --prefix Backend run seed` still exists for local testing only. Its demo files have no subject, so they show as Unsorted.)
 
 ## Exam schedule
 

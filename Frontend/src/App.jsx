@@ -8,6 +8,8 @@ import { RequireStudent, RequireAdmin, RequireLogin, RequireOwner } from "./util
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import ChangePassword from "./pages/ChangePassword.jsx";
+import Welcome from "./pages/Welcome.jsx";
+import Feedback from "./pages/Feedback.jsx";
 import OwnerDashboard from "./pages/OwnerDashboard.jsx";
 
 // Student pages
@@ -27,6 +29,7 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements.jsx";
 import AdminContent from "./pages/admin/AdminContent.jsx";
 import AdminStudents from "./pages/admin/AdminStudents.jsx";
 import AdminExams from "./pages/admin/AdminExams.jsx";
+import AdminSubjects from "./pages/admin/AdminSubjects.jsx";
 
 export default function App() {
   return (
@@ -41,6 +44,7 @@ export default function App() {
             {/* Signed in: change password (forced right after a CR reset) */}
             <Route element={<RequireLogin />}>
               <Route path="/change-password" element={<ChangePassword />} />
+              <Route path="/welcome" element={<Welcome />} />
             </Route>
 
             {/* STUDENT ROUTES (protected) – the layout stays mounted while pages change */}
@@ -52,6 +56,7 @@ export default function App() {
                 <Route path="/discussions/:id" element={<DiscussionDetail />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/feedback" element={<Feedback />} />
               </Route>
             </Route>
 
@@ -60,10 +65,12 @@ export default function App() {
               <Route element={<AdminLayout />}>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/content" element={<AdminContent />} />
+                <Route path="/admin/subjects" element={<AdminSubjects />} />
                 <Route path="/admin/exams" element={<AdminExams />} />
                 <Route path="/admin/students" element={<AdminStudents />} />
                 <Route path="/admin/leaderboard" element={<AdminLeaderboard />} />
                 <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+                <Route path="/admin/feedback" element={<Feedback />} />
               </Route>
             </Route>
 

@@ -8,6 +8,7 @@ export function RequireStudent() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
+  if (user.needsDisplayName) return <Navigate to="/welcome" replace />;
   return <Outlet />;
 }
 
@@ -16,6 +17,7 @@ export function RequireAdmin() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
+  if (user.needsDisplayName) return <Navigate to="/welcome" replace />;
   if (user.role !== "admin") return <Navigate to="/" replace />;
   return <Outlet />;
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api"; // axios instance
 
@@ -28,6 +28,22 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(readUser);
 
+  // Sessions from before display names existed: ask the server once and send them to /welcome if needed
+  useEffect(() => {
+    if (!user?.token) return;
+    API.get("/auth/me")
+      .then(({ data }) => {
+        const changes = { id: data._id, needsDisplayName: !data.displayName, fullName: data.name };
+        if (data.displayName) changes.name = data.displayName;
+        setUser((prev) => {
+          const next = { ...prev, ...changes };
+          saveUser(next);
+          return next;
+        });
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // LOGIN — with a roll number (or an email)
   const login = async (identifier, password) => {
     try {
@@ -35,6 +51,7 @@ export function AuthProvider({ children }) {
 
       const u = {
         token: data.token,
+        id: data.id,
         role: data.role,
         email: data.email,
         name: data.name,
@@ -43,6 +60,8 @@ export function AuthProvider({ children }) {
         rollNumber: data.rollNumber,
         mustChangePassword: !!data.mustChangePassword,
         isOwner: !!data.isOwner,
+        fullName: data.fullName,
+        needsDisplayName: !!data.needsDisplayName,
       };
 
       setUser(u);
@@ -50,6 +69,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem("token", data.token);
 
       if (u.mustChangePassword) navigate("/change-password", { replace: true });
+      else if (u.needsDisplayName) navigate("/welcome", { replace: true });
       else if (u.role === "admin") navigate("/admin", { replace: true });
       else navigate("/", { replace: true });
 

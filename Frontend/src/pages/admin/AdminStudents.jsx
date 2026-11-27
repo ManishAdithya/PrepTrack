@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Search, ShieldCheck, ShieldOff, KeyRound } from "lucide-react";
+import { Users, Search, ShieldCheck, ShieldOff, KeyRound, UserMinus } from "lucide-react";
 import API from "../../api";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useToast } from "../../components/ui/Toast.jsx";
@@ -25,6 +25,7 @@ export default function AdminStudents() {
   const [confirmRole, setConfirmRole] = useState(null); // { student, role }
   const [confirmReset, setConfirmReset] = useState(null); // student
   const [tempPassword, setTempPassword] = useState(null); // { name, rollNumber, tempPassword }
+  const [confirmRemove, setConfirmRemove] = useState(null); // student
 
   useEffect(() => {
     API.get("/users/all")
@@ -36,7 +37,7 @@ export default function AdminStudents() {
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
     return students
-      .filter((s) => !q || [s.name, s.rollNumber].some((v) => String(v || "").toLowerCase().includes(q)))
+      .filter((s) => !q || [s.name, s.displayName, s.rollNumber].some((v) => String(v || "").toLowerCase().includes(q)))
       .sort((a, b) => String(a.rollNumber).localeCompare(String(b.rollNumber)));
   }, [students, query]);
   const crCount = students.filter((s) => s.role === "admin").length;
@@ -67,6 +68,19 @@ export default function AdminStudents() {
     }
   };
 
+  // remove a student from the class (their uploads and posts stay, shown as "Removed student")
+  const removeStudent = async () => {
+    const student = confirmRemove;
+    setConfirmRemove(null);
+    try {
+      await API.delete(`/users/${student._id}`);
+      setStudents((prev) => prev.filter((u) => u._id !== student._id));
+      toast({ type: "info", title: `${student.name} was removed` });
+    } catch (err) {
+      toast({ type: "error", title: err.response?.data?.message || "Couldn't remove the student" });
+    }
+  };
+
   if (loading)
     return (
       <div className="space-y-6">
@@ -82,7 +96,7 @@ export default function AdminStudents() {
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <PageHeader
         title="Students"
-        subtitle={`${students.length} in the class · ${crCount} of 2 CRs. Reset a forgotten password or choose the CRs.`}
+        subtitle={`${students.length} in the class · ${crCount} of 2 CRs. Reset passwords, choose CRs or remove someone.`}
       />
 
       <motion.div variants={item} className="relative">
@@ -107,7 +121,10 @@ export default function AdminStudents() {
                       )}
                       {isMe(s) && <span className="text-xs text-zinc-500">(you)</span>}
                     </div>
-                    <div className="font-mono text-xs text-zinc-500">{s.rollNumber}</div>
+                    <div className="text-xs text-zinc-500">
+                      <span className="font-mono">{s.rollNumber}</span>
+                      {s.displayName && s.displayName !== s.name && <> · shows as <span className="text-zinc-300">{s.displayName}</span></>}
+                    </div>
                   </div>
                 </div>
 
@@ -130,6 +147,11 @@ export default function AdminStudents() {
                         <ShieldCheck size={14} /> Make CR
                       </button>
                     )}
+                    {s.role !== "admin" && (
+                      <button onClick={() => setConfirmRemove(s)} className="btn-danger !min-h-[36px] !px-3 !py-1.5 text-xs" aria-label={`Remove ${s.name}`}>
+                        <UserMinus size={14} /> Remove
+                      </button>
+                    )}
                   </div>
                 )}
               </li>
@@ -137,6 +159,22 @@ export default function AdminStudents() {
           </ul>
         )}
       </Card>
+
+      {/* Remove a student */}
+      <Modal
+        open={!!confirmRemove}
+        onClose={() => setConfirmRemove(null)}
+        width="max-w-md"
+        title={`Remove ${confirmRemove?.name} from the class?`}
+        subtitle="Their account is deleted and they can't sign in any more. What they shared stays for the class, shown as 'Removed student'. This can't be undone."
+      >
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setConfirmRemove(null)} className="btn-ghost">Cancel</button>
+          <button onClick={removeStudent} className="btn-danger">
+            <UserMinus size={15} /> Remove
+          </button>
+        </div>
+      </Modal>
 
       {/* Make / remove CR */}
       <Modal

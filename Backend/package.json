@@ -10,7 +10,8 @@
     "make-admin": "node scripts/makeAdmin.js",
     "make-owner": "node scripts/makeOwner.js",
     "seed": "node scripts/seed.js",
-    "seed:clear": "node scripts/seed.js --clear"
+    "seed:clear": "node scripts/seed.js --clear",
+    "fresh-start": "node scripts/freshStart.js"
   },
   "keywords": [],
   "author": "",

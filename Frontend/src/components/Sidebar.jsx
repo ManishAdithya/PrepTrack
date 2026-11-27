@@ -8,6 +8,7 @@ import {
   Trophy,
   User,
   Sparkles,
+  MessageSquareWarning,
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -28,6 +29,7 @@ export const studentSections = [
     links: [
       { to: "/leaderboard", label: "Leaderboard", short: "Ranks", icon: Trophy },
       { to: "/profile", label: "Profile", icon: User },
+      { to: "/feedback", label: "Feedback", icon: MessageSquareWarning },
     ],
   },
 ];

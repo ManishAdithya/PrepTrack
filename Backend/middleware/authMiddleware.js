@@ -16,7 +16,7 @@ export const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findById(decoded.id).select("name role branch batch rollNumber isOwner");
+    const user = await User.findById(decoded.id).select("name displayName role branch batch rollNumber isOwner");
     if (!user) return res.status(401).json({ message: "Account not found" });
 
     // Accounts created before batches existed get theirs from the roll number
@@ -30,7 +30,10 @@ export const authMiddleware = async (req, res, next) => {
 
     req.user = {
       id: String(user._id),
-      name: user.name,
+      // everything a student posts uses their display name
+      name: user.displayName || user.name,
+      fullName: user.name,
+      hasDisplayName: !!user.displayName,
       role: user.role,
       branch: user.branch,
       batch: user.batch,
