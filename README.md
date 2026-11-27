@@ -13,7 +13,7 @@ It is currently open to the EEE 2024 batch at Amrita (roll numbers `AM.EN.U4EEE2
 **For students**
 
 - **Study materials by semester and subject.** Notes, slides, PYQs and other files, sorted S1 to S6 and then by subject, with search across all semesters.
-- **Uploading.** Pick the semester and subject, then share a Google Drive or OneDrive link. S6 also accepts files (PDF, PPT, Word or images, up to 3 MB; converting a PPTX to PDF makes it much smaller); S1 to S5 take links only, to save storage.
+- **Uploading.** Pick the semester and subject, then share a Google Drive or OneDrive link. S6 also accepts files (PDF, PPT, Word or images, up to 2 MB; converting a PPTX to PDF makes it much smaller); S1 to S5 take links only, to save storage.
 - **Community review.** New uploads go live when a CR approves them or 5 classmates mark them Helpful. Students with 150+ XP are trusted and their uploads go live instantly. 5 reports hide an upload until a CR looks at it.
 - **Exam countdown.** CRs post the exam schedule, and the dashboard counts down to the next exam (students can switch which one).
 - **Class forum** for doubts and discussion.
@@ -98,7 +98,7 @@ Set in `Backend/.env.local` locally, and in Vercel → Settings → Environment 
 | `ALLOWED_ROLL_FORMATS` | Roll numbers that can sign up, `#` = any digit (quote it in `.env`) | `AM.EN.U4EEE24###` |
 | `CR_ROLL_NUMBERS` | Roll numbers that join as CRs | the two current CRs |
 | `MAX_CRS_PER_BATCH` | CRs allowed per class | `2` |
-| `MAX_UPLOAD_MB` | Biggest file upload, in MB | `3` |
+| `MAX_UPLOAD_MB` | Biggest file upload, in MB | `2` |
 | `FILE_UPLOAD_SEMESTERS` | Semesters that accept files; the others take links only | `6` |
 | `TRUSTED_XP` | XP needed for instant publishing | `150` |
 | `AUTO_APPROVE_UPVOTES` | Helpful votes that publish an upload | `5` |

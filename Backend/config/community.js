@@ -49,7 +49,7 @@ export function getRules() {
     // An upload is hidden for moderator review once this many students report it
     hideReports: Number(process.env.AUTO_HIDE_REPORTS || 5),
     // Biggest file a student can upload, in MB (Blob storage is only 1 GB; bigger files go on Drive)
-    maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 3),
+    maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 2),
     // Semesters that accept file uploads; every other semester takes links only (FILE_UPLOAD_SEMESTERS, e.g. "6")
     fileSemesters: list(process.env.FILE_UPLOAD_SEMESTERS, ["6"]).map(Number).filter((n) => n >= 1 && n <= 6),
   };
