@@ -4,7 +4,8 @@ import {
   getUserProgress,
   addPrepSubject,
   updatePrepSubject,
-  deletePrepSubject
+  deletePrepSubject,
+  setSubjectConfidence,
 } from "../controllers/progressController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -22,5 +23,8 @@ router.post("/update", authMiddleware, updateProgress);
 router.post("/prep/add", authMiddleware, addPrepSubject);
 router.patch("/prep/update/:id", authMiddleware, updatePrepSubject);
 router.delete("/prep/delete/:id", authMiddleware, deletePrepSubject);
+
+// How confident the student feels about a subject (subjects come from the CR's exam schedule)
+router.put("/confidence", authMiddleware, setSubjectConfidence);
 
 export default router;

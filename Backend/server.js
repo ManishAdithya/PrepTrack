@@ -13,6 +13,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import discussionRoutes from "./routes/discussionRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import examRoutes from "./routes/examRoutes.js";
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/discussions", discussionRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/exams", examRoutes);
 
 // Uploaded files, when stored on this computer (local development without Vercel Blob)
 app.use("/files", express.static(LOCAL_STORAGE_DIR));

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import React from "react";
-import { LayoutDashboard, FolderOpenDot, Users, Megaphone, BarChart3, GraduationCap } from "lucide-react";
+import { LayoutDashboard, FolderOpenDot, Users, Megaphone, BarChart3, GraduationCap, CalendarClock } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import NavSidebar from "../NavSidebar.jsx";
 
@@ -10,14 +10,15 @@ export const adminSections = [
     links: [
       { to: "/admin", label: "Dashboard", short: "Home", icon: LayoutDashboard },
       { to: "/admin/content", label: "Content Review", short: "Review", icon: FolderOpenDot },
+      { to: "/admin/exams", label: "Exams", icon: CalendarClock },
       { to: "/admin/students", label: "Students", icon: Users },
     ],
   },
   {
     title: "Manage",
     links: [
-      { to: "/admin/leaderboard", label: "Leaderboard", short: "Ranks", icon: BarChart3 },
       { to: "/admin/announcements", label: "Announcements", short: "News", icon: Megaphone },
+      { to: "/admin/leaderboard", label: "Leaderboard", short: "Ranks", icon: BarChart3 },
     ],
   },
 ];

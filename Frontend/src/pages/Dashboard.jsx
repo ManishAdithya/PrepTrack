@@ -11,22 +11,26 @@ import Card from "../components/ui/Card.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import Skeleton from "../components/ui/Skeleton.jsx";
 import ReadinessHelp from "../components/ReadinessHelp.jsx";
+import ExamCountdown, { UpcomingExams, useCountdownChoice } from "../components/ExamCountdown.jsx";
+import { daysLeft } from "../utils/exams.js";
 import { FocusFace } from "../components/FocusTimer.jsx";
 import { container, item } from "../components/ui/motion.js";
 import { greeting } from "../utils/gamification.js";
-import { bandOf, daysUntil, isNew, shortDate, timeAgo, typeOf } from "../utils/ui.js";
+import { bandOf, isNew, shortDate, timeAgo, typeOf } from "../utils/ui.js";
 
 // One number with a label; the whole cell is a link
+// `to` starting with # scrolls within the page (a plain anchor); anything else is an app route
 function Glance({ to, label, value, sub, subClass = "text-zinc-500", extra }) {
+  const Tag = to.startsWith("#") ? "a" : Link;
   return (
-    <Link to={to} className="group min-w-0 flex-1 p-4 transition hover:bg-white/[0.03] sm:p-5">
+    <Tag {...(to.startsWith("#") ? { href: to } : { to })} className="group min-w-0 flex-1 p-4 transition hover:bg-white/[0.03] sm:p-5">
       <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
         {label}
         {extra}
       </div>
       <div className="mt-1 truncate font-display text-2xl font-bold text-white sm:text-3xl">{value}</div>
       <div className={`truncate text-xs ${subClass}`}>{sub}</div>
-    </Link>
+    </Tag>
   );
 }
 
@@ -53,11 +57,13 @@ export default function Dashboard() {
   const [materials, setMaterials] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [progress, setProgress] = useState(null);
+  const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([API.get("/upload"), API.get("/notification"), API.get("/progress")])
-      .then(([m, n, p]) => {
+    Promise.all([API.get("/upload"), API.get("/notification"), API.get("/progress"), API.get("/exams").catch(() => ({ data: [] }))])
+      .then(([m, n, p, ex]) => {
+        setExams(ex.data);
         setMaterials(m.data.slice(0, 3));
         setAnnouncements(n.data);
         setProgress(p.data);
@@ -69,9 +75,9 @@ export default function Dashboard() {
   const name = user?.name || authUser?.name || "Student";
   const firstName = name.split(" ")[0];
   const readiness = progress?.readiness;
-  const nextExam = (progress?.prepSubjects || [])
-    .filter((s) => s.examDate && new Date(s.examDate) > Date.now())
-    .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))[0];
+  // countdown: the exam the student picked, or the next one
+  const { current, choose, live } = useCountdownChoice(exams);
+  const thisWeek = live.filter((e) => daysLeft(e.date) <= 7).length;
   const urgent = announcements.find((a) => a.priority && !a.read);
   const otherNews = announcements.filter((a) => a !== urgent).slice(0, 2);
 
@@ -119,6 +125,11 @@ export default function Dashboard() {
         </motion.div>
       )}
 
+      {/* ===== Exam countdown (from the CR's schedule) ===== */}
+      <motion.div variants={item}>
+        {loading ? <Skeleton className="h-56" /> : <ExamCountdown exams={exams} current={current} choose={choose} />}
+      </motion.div>
+
       {/* ===== At a glance ===== */}
       <Card variants={item} className="flex divide-x divide-white/[0.06] p-0">
         {loading ? (
@@ -136,11 +147,11 @@ export default function Dashboard() {
               subClass={readiness?.band ? bandOf(readiness.band).text : "text-zinc-500"}
             />
             <Glance
-              to="/progress"
-              label="Next exam"
-              value={nextExam ? `${Math.max(0, daysUntil(nextExam.examDate))}d` : "—"}
-              sub={nextExam ? nextExam.subject : "Add exam dates"}
-              subClass={nextExam && daysUntil(nextExam.examDate) <= 5 ? "text-rose-400" : "text-zinc-500"}
+              to="#exams"
+              label="This week"
+              value={live.length ? String(thisWeek) : "—"}
+              sub={thisWeek === 1 ? "exam" : "exams"}
+              subClass={thisWeek ? "text-rose-400" : "text-zinc-500"}
             />
             <Glance to="/leaderboard" label="Rank" value={game.rank ? `#${game.rank}` : "—"} sub={`${game.xp} XP`} />
           </>
@@ -149,6 +160,16 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr,320px]">
         <div className="min-w-0 space-y-6">
+          {/* ===== Upcoming exams ===== */}
+          {live.length > 0 && (
+            <motion.section id="exams" variants={item} initial="hidden" animate="show" className="scroll-mt-20">
+              <SectionHead title={`Upcoming exams · ${live.length}`} />
+              <Card variants={null} className="p-0">
+                <UpcomingExams exams={live} current={current} choose={choose} />
+              </Card>
+            </motion.section>
+          )}
+
           {/* ===== New materials ===== */}
           <motion.section variants={item}>
             <SectionHead title="New materials" to="/resources" />
@@ -205,15 +226,6 @@ export default function Dashboard() {
             </motion.section>
           )}
 
-          {/* ===== Next exam (when set) ===== */}
-          {!loading && !nextExam && (
-            <motion.div variants={item} initial="hidden" animate="show">
-              <Link to="/progress" className="flex items-center gap-3 rounded-2xl border border-dashed border-white/15 p-4 text-sm text-zinc-400 hover:border-white/30 hover:text-white">
-                <CalendarClock size={18} /> Add your exam dates to get a countdown
-                <ChevronRight size={16} className="ml-auto" />
-              </Link>
-            </motion.div>
-          )}
         </div>
 
         {/* ===== Side column (desktop) ===== */}

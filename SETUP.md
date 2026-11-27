@@ -55,6 +55,12 @@ All the numbers above can be changed in `Backend/.env` — see `Backend/.env.exa
 
 Add roll-number formats to `ALLOWED_ROLL_FORMATS` in `Backend/.env.local` (and in Vercel → Settings → Environment Variables), comma-separated, where `#` is any digit — e.g. `AM.EN.U4EEE24###,AM.EN.U4EEE25###`. Each class (branch + joining year, read from the roll number) only sees its own materials, forum, announcements and leaderboard, and has up to 2 CRs.
 
+## Exam schedule
+
+- CRs post every exam in **CR portal → Exams**: subject, type (Quiz, Mid-term, End-semester, Lab exam, Assignment, Other), date and start time, and optionally marks, duration, venue and syllabus.
+- Posting an exam sends the class an announcement; moving its date sends a priority one.
+- Students see a **live countdown** on their dashboard (they can switch it to any upcoming exam) and the full list of upcoming exams. On **Progress** they tap how confident they feel per subject — they never type exam dates themselves.
+
 ## Accounts and passwords
 
 - Students **sign in with their roll number** (any letter case). One account per roll number and per email.

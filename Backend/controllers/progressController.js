@@ -107,3 +107,25 @@ export const deletePrepSubject = async (req, res) => {
     res.status(500).json({ message: "Error deleting subject" });
   }
 };
+
+// PUT /api/progress/confidence { subject, confidence } — how sure the student feels about a subject.
+// Subjects come from the CR's exam schedule, so students no longer type exam dates themselves.
+export const setSubjectConfidence = async (req, res) => {
+  try {
+    const subject = String(req.body.subject || "").trim();
+    const { confidence } = req.body;
+    if (!subject) return res.status(400).json({ message: "Subject is required" });
+    if (!CONF.includes(confidence)) return res.status(400).json({ message: "Confidence must be High, Medium or Low" });
+
+    const progress = await myProgress(req.user);
+    const key = subject.toLowerCase();
+    const existing = progress.prepSubjects.find((p) => String(p.subject).trim().toLowerCase() === key);
+    if (existing) existing.confidence = confidence;
+    else progress.prepSubjects.push({ subject, confidence });
+    await progress.save();
+    await sendPlan(res, req.user, progress, "Saved");
+  } catch (err) {
+    console.error("Set Confidence Error:", err);
+    res.status(500).json({ message: "Error saving confidence" });
+  }
+};

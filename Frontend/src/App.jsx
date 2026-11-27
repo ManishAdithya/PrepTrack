@@ -26,6 +26,7 @@ import AdminLeaderboard from "./pages/admin/AdminLeaderboard.jsx";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements.jsx";
 import AdminContent from "./pages/admin/AdminContent.jsx";
 import AdminStudents from "./pages/admin/AdminStudents.jsx";
+import AdminExams from "./pages/admin/AdminExams.jsx";
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
               <Route element={<AdminLayout />}>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/content" element={<AdminContent />} />
+                <Route path="/admin/exams" element={<AdminExams />} />
                 <Route path="/admin/students" element={<AdminStudents />} />
                 <Route path="/admin/leaderboard" element={<AdminLeaderboard />} />
                 <Route path="/admin/announcements" element={<AdminAnnouncements />} />

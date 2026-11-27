@@ -73,7 +73,7 @@ function makePdf(title, lines) {
 }
 
 async function clear(db) {
-  const names = ["users", "materials", "progresses", "results", "leaderboards", "notifications", "discussions", "branches", "securitylogs"];
+  const names = ["users", "materials", "progresses", "results", "leaderboards", "notifications", "discussions", "exams", "branches", "securitylogs"];
   for (const n of names) {
     const { deletedCount } = await db.collection(n).deleteMany({ seed: true });
     if (deletedCount) console.log(`  removed ${deletedCount} from ${n}`);
@@ -215,6 +215,28 @@ async function seedBatch(db, Y, hash) {
   ];
   await db.collection("discussions").insertMany(
     DISCUSSIONS.map(([title, author, tags, d, comments]) => ({ title, body: "", author, ...scope, tags, comments, commentsCount: comments.length, createdAt: at(d), seed: true, __v: 0 }))
+  );
+
+  // ---------- exam schedule (posted by this class's CR) ----------
+  // [subject index, type, days from today, "HH:MM", marks, minutes, venue, details]
+  const EXAMS = [
+    [2, "Quiz", 3, "10:00", 20, 45, "Room 204", "Units 1–2: block diagrams, signal flow graphs, time response."],
+    [3, "Assignment", 5, "23:59", 10, null, "Upload on the course portal", "Design problem set 2 — single-phase rectifiers."],
+    [0, "Mid-term", 8, "09:30", 50, 120, "Main block, Hall A", "Units 1–3. Bring a scientific calculator."],
+    [1, "Lab exam", 11, "14:00", 25, 90, "Machines lab", "OC/SC test and load test on a single-phase transformer."],
+    [4, "End-semester", 25, "09:30", 100, 180, "Exam hall", "Full syllabus. Previous papers are in Study Materials."],
+  ];
+  const examAt = (days, hhmm) => {
+    const d = at(days);
+    const [h, m] = hhmm.split(":").map(Number);
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+  await db.collection("exams").insertMany(
+    EXAMS.map(([si, type, days, hhmm, maxMarks, durationMinutes, venue, details], i) => ({
+      ...scope, subject: S[si], type, date: examAt(days, hhmm), maxMarks, durationMinutes, venue, details,
+      createdBy: crName, createdAt: at(-1 - i), updatedAt: at(-1 - i), seed: true, __v: 0,
+    }))
   );
 
   // ---------- announcements (from this batch's CR) ----------

@@ -13,7 +13,8 @@ import Skeleton from "../components/ui/Skeleton.jsx";
 import ReadinessHelp from "../components/ReadinessHelp.jsx";
 import { container, item } from "../components/ui/motion.js";
 import { celebrate } from "../utils/confetti.js";
-import { bandOf, daysUntil, shortDate } from "../utils/ui.js";
+import { bandOf, shortDate } from "../utils/ui.js";
+import { daysLeft, examWhen, relative } from "../utils/exams.js";
 
 const CONFIDENCE = ["High", "Medium", "Low"];
 
@@ -54,18 +55,13 @@ export default function Progress() {
   const [totalMarks, setTotalMarks] = useState("");
   const [examDate, setExamDate] = useState("");
 
-  // exam plan
-  const [showAddPrep, setShowAddPrep] = useState(false);
-  const [prepSubject, setPrepSubject] = useState("");
-  const [prepDate, setPrepDate] = useState("");
-  const [prepConfidence, setPrepConfidence] = useState("Medium");
-  const [editId, setEditId] = useState(null);
-  const [editDate, setEditDate] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  // the class exam schedule (posted by the CR)
+  const [exams, setExams] = useState([]);
 
   const fetchData = async () => {
     try {
-      const [p, r] = await Promise.all([API.get("/progress"), API.get("/result")]);
+      const [p, r, ex] = await Promise.all([API.get("/progress"), API.get("/result"), API.get("/exams").catch(() => ({ data: [] }))]);
+      setExams(ex.data);
       setReadiness(p.data.readiness);
       setPrepSubjects(p.data.prepSubjects || []);
       setResults(r.data);
@@ -108,41 +104,13 @@ export default function Progress() {
     }
   };
 
-  const handleAddPrep = async (e) => {
-    e.preventDefault();
-    if (!prepSubject.trim()) return;
+  // how confident the student feels about a subject (readiness warnings compare this with marks)
+  const setConfidence = async (subject, confidence) => {
     try {
-      const { data } = await API.post("/progress/prep/add", { subject: prepSubject.trim(), examDate: prepDate || null, confidence: prepConfidence });
-      applyPlan(data);
-      setPrepSubject("");
-      setPrepDate("");
-      setPrepConfidence("Medium");
-      setShowAddPrep(false);
-      toast({ title: "Exam added" });
-    } catch (err) {
-      apiError(err, "Failed to add subject.");
-    }
-  };
-
-  const updatePrep = async (id, payload) => {
-    try {
-      const { data } = await API.patch(`/progress/prep/update/${id}`, payload);
+      const { data } = await API.put("/progress/confidence", { subject, confidence });
       applyPlan(data);
     } catch (err) {
-      apiError(err, "Failed to update subject.");
-    }
-  };
-
-  const deletePrep = async (id) => {
-    try {
-      const { data } = await API.delete(`/progress/prep/delete/${id}`);
-      applyPlan(data);
-      if (editId === id) setEditId(null);
-      toast({ type: "info", title: "Subject removed" });
-    } catch (err) {
-      apiError(err, "Failed to delete subject.");
-    } finally {
-      setConfirmDelete(null);
+      apiError(err, "Couldn't save.");
     }
   };
 
@@ -160,12 +128,18 @@ export default function Progress() {
     .sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt))
     .map((r) => ({ x: shortDate(r.uploadedAt), date: new Date(r.uploadedAt).toLocaleDateString(), subject: r.subject, y: r.percentage }));
 
-  const plan = [...prepSubjects].sort((a, b) => {
-    if (!a.examDate) return 1;
-    if (!b.examDate) return -1;
-    return new Date(a.examDate) - new Date(b.examDate);
-  });
-  const knownSubjects = [...new Set([...results.map((r) => r.subject), ...prepSubjects.map((p) => p.subject)])];
+  const confidenceOf = (subj) =>
+    prepSubjects.find((p) => String(p.subject).trim().toLowerCase() === String(subj).trim().toLowerCase())?.confidence || null;
+  const upcoming = exams.filter((e) => new Date(e.date) > Date.now());
+  const subjectRows = [];
+  for (const e of upcoming) {
+    if (!subjectRows.some((r) => r.subject.toLowerCase() === e.subject.toLowerCase())) subjectRows.push({ subject: e.subject, next: e });
+  }
+  for (const r of results) {
+    if (!subjectRows.some((x) => x.subject.toLowerCase() === r.subject.toLowerCase())) subjectRows.push({ subject: r.subject, next: null });
+  }
+  subjectRows.forEach((r) => (r.confidence = confidenceOf(r.subject)));
+  const knownSubjects = subjectRows.map((r) => r.subject);
   const previewPct = marks !== "" && Number(totalMarks) > 0 ? Math.round((Number(marks) / Number(totalMarks)) * 100) : null;
   const overall = readiness?.overall;
 
@@ -173,16 +147,11 @@ export default function Progress() {
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <PageHeader
         title="Progress"
-        subtitle="Your readiness from marks, and your exam plan."
+        subtitle="Your readiness from marks, and how confident you feel per subject."
         actions={
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
-            <button onClick={() => setShowAddPrep(true)} className="btn-ghost">
-              <CalendarPlus size={16} /> Add exam
-            </button>
-            <button onClick={() => setShowResult(true)} className="btn-primary">
-              <UploadCloud size={16} /> Log result
-            </button>
-          </div>
+          <button onClick={() => setShowResult(true)} className="btn-primary w-full sm:w-auto">
+            <UploadCloud size={16} /> Log result
+          </button>
         }
       />
 
@@ -241,93 +210,34 @@ export default function Progress() {
         </Card>
       </motion.section>
 
-      {/* ===== Exam plan ===== */}
+      {/* ===== Confidence per subject (subjects come from the CR's exam schedule) ===== */}
       <motion.section variants={item}>
-        <SectionHead title="Exam plan">
-          <span className="text-xs text-zinc-500">tap how confident you feel</span>
+        <SectionHead title="How confident do you feel?">
+          <span className="text-xs text-zinc-500">exam dates come from your CR</span>
         </SectionHead>
         <Card variants={null} className="p-0">
-          {plan.length === 0 ? (
-            <button onClick={() => setShowAddPrep(true)} className="flex w-full items-center gap-3 p-5 text-left text-sm text-zinc-400 hover:text-white">
-              <CalendarPlus size={18} /> Add your exams to get countdowns
-            </button>
+          {subjectRows.length === 0 ? (
+            <div className="p-5 text-sm text-zinc-400">
+              No subjects yet. They appear here when your CR posts exams or when you log a result.
+            </div>
           ) : (
             <ul className="divide-y divide-white/[0.06]">
-              {plan.map((sub) => {
-                const d = sub.examDate ? daysUntil(sub.examDate) : null;
-                const soon = d !== null && d >= 0 && d <= 5;
+              {subjectRows.map((row) => {
+                const soon = row.next && daysLeft(row.next.date) <= 3;
                 return (
-                  <li key={sub._id} className="p-4 sm:px-5">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-center leading-none ${
-                          soon ? "bg-rose-500/15 text-rose-300" : "bg-white/[0.05] text-white"
-                        }`}
-                      >
-                        {d === null ? (
-                          <span className="text-[10px] text-zinc-500">no date</span>
-                        ) : d < 0 ? (
-                          <span className="text-[11px] font-semibold text-zinc-500">done</span>
-                        ) : (
-                          <div>
-                            <div className="font-display text-lg font-bold">{d}</div>
-                            <div className="text-[9px] uppercase tracking-wider opacity-70">{d === 1 ? "day" : "days"}</div>
-                          </div>
-                        )}
+                  <li key={row.subject} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:px-5">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-white">{row.subject}</div>
+                      <div className={`text-xs ${soon ? "text-rose-300" : "text-zinc-500"}`}>
+                        {row.next ? `${row.next.type} · ${examWhen(row.next.date)} · ${relative(row.next.date)}` : "No upcoming exam"}
                       </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold text-white">{sub.subject}</div>
-                        {editId === sub._id ? (
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="input !py-1.5 text-xs" />
-                            <button
-                              onClick={async () => {
-                                await updatePrep(sub._id, { examDate: editDate || null });
-                                setEditId(null);
-                              }}
-                              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-black"
-                              aria-label="Save date"
-                            >
-                              <Check size={15} />
-                            </button>
-                            <button onClick={() => setEditId(null)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10 text-zinc-300" aria-label="Cancel">
-                              <X size={15} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setEditId(sub._id);
-                              setEditDate(sub.examDate ? new Date(sub.examDate).toISOString().slice(0, 10) : "");
-                            }}
-                            className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white"
-                          >
-                            {sub.examDate
-                              ? new Date(sub.examDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
-                              : "Set exam date"}
-                            <Pencil size={11} />
-                          </button>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={() => setConfirmDelete(sub)}
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-zinc-600 hover:bg-rose-500/10 hover:text-rose-300"
-                        aria-label={`Delete ${sub.subject}`}
-                      >
-                        <Trash2 size={15} />
-                      </button>
                     </div>
-
-                    <div className="mt-3 sm:ml-[3.75rem]">
-                      <Segmented
-                        size="sm"
-                        value={sub.confidence}
-                        onChange={(v) => v !== sub.confidence && updatePrep(sub._id, { confidence: v })}
-                        options={CONFIDENCE.map((x) => ({ value: x, label: x === "Medium" ? "Med" : x }))}
-                      />
-                    </div>
+                    <Segmented
+                      size="sm"
+                      value={row.confidence}
+                      onChange={(v) => v !== row.confidence && setConfidence(row.subject, v)}
+                      options={CONFIDENCE.map((x) => ({ value: x, label: x === "Medium" ? "Med" : x }))}
+                    />
                   </li>
                 );
               })}
@@ -400,41 +310,6 @@ export default function Progress() {
         </form>
       </Modal>
 
-      <Modal open={showAddPrep} onClose={() => setShowAddPrep(false)} title="Add an exam" subtitle="You'll get a countdown on your dashboard.">
-        <form onSubmit={handleAddPrep} className="space-y-4">
-          <div>
-            <label className="label">Subject</label>
-            <input value={prepSubject} onChange={(e) => setPrepSubject(e.target.value)} placeholder="e.g., Control Systems" className="input" list="subject-list" required />
-          </div>
-          <div>
-            <label className="label">Exam date</label>
-            <input type="date" value={prepDate} onChange={(e) => setPrepDate(e.target.value)} className="input" />
-          </div>
-          <div>
-            <label className="label">How confident do you feel?</label>
-            <Segmented value={prepConfidence} onChange={setPrepConfidence} options={CONFIDENCE} />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={() => setShowAddPrep(false)} className="btn-ghost">Cancel</button>
-            <button type="submit" className="btn-primary">Add</button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
-        open={!!confirmDelete}
-        onClose={() => setConfirmDelete(null)}
-        title="Delete this exam?"
-        subtitle={`"${confirmDelete?.subject}" will be removed from your plan. Your results stay.`}
-        width="max-w-md"
-      >
-        <div className="flex justify-end gap-2">
-          <button onClick={() => setConfirmDelete(null)} className="btn-ghost">Keep</button>
-          <button onClick={() => deletePrep(confirmDelete._id)} className="btn-danger">
-            <Trash2 size={15} /> Delete
-          </button>
-        </div>
-      </Modal>
     </motion.div>
   );
 }

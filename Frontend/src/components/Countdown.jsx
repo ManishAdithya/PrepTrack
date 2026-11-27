@@ -5,7 +5,7 @@ function Digit({ value, label }) {
   const v = String(value).padStart(2, "0");
   return (
     <div className="flex flex-col items-center">
-      <div className="relative grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] sm:h-20 sm:w-20">
+      <div className="relative grid h-[60px] w-[60px] place-items-center overflow-hidden rounded-xl border border-white/10 bg-ink-900 sm:h-20 sm:w-20 sm:rounded-2xl">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
             key={v}
@@ -13,7 +13,7 @@ function Digit({ value, label }) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="font-display text-3xl font-bold tabular-nums text-white sm:text-4xl"
+            className="font-display text-[28px] font-bold tabular-nums text-white sm:text-4xl"
           >
             {v}
           </motion.span>
@@ -41,16 +41,14 @@ export default function Countdown({ date }) {
   const secs = Math.floor((diff % 60000) / 1000);
 
   return (
-    <div className="flex items-start gap-2 sm:gap-3">
+    <div className="flex items-start gap-1.5 sm:gap-3">
       <Digit value={days} label="days" />
-      <span className="mt-5 font-display text-2xl text-zinc-600 sm:mt-6">:</span>
+      <span className="mt-4 font-display text-xl text-zinc-600 sm:mt-6 sm:text-2xl">:</span>
       <Digit value={hours} label="hours" />
-      <span className="mt-5 font-display text-2xl text-zinc-600 sm:mt-6">:</span>
+      <span className="mt-4 font-display text-xl text-zinc-600 sm:mt-6 sm:text-2xl">:</span>
       <Digit value={mins} label="mins" />
-      <span className="mt-5 hidden font-display text-2xl text-zinc-600 sm:mt-6 sm:inline">:</span>
-      <div className="hidden sm:block">
-        <Digit value={secs} label="secs" />
-      </div>
+      <span className="mt-4 font-display text-xl text-zinc-600 sm:mt-6 sm:text-2xl">:</span>
+      <Digit value={secs} label="secs" />
     </div>
   );
 }
