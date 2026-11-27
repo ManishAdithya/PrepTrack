@@ -1,7 +1,5 @@
 # PrepTrack – Prepare for Your Exams and Track Progress
 
-**Team No:** B8  
-**Course:** Software Engineering (CSE Batch B)  
 **Project Type:** Full-Stack Web Application  
 
 ---
