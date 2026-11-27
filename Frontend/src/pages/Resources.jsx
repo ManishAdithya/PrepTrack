@@ -85,10 +85,12 @@ export default function Resources() {
       if (rules.uploads === "blob") {
         // Hosted on Vercel: the browser uploads the file straight to Vercel Blob,
         // then sends the backend just its URL (so large PDFs work)
-        const { upload } = await import("@vercel/blob/client");
+        const { upload, uploadPresigned } = await import("@vercel/blob/client");
+        const send = rules.blobFlow === "presigned" ? uploadPresigned : upload;
         const me = user.batch ? user : (await API.get("/auth/me")).data;
         const safeName = file.name.replace(/[^\w.-]+/g, "_");
-        const blob = await upload(`materials/${me.branch}-${me.batch}/${safeName}`, file, {
+        // a timestamp keeps names unique, since uploads never overwrite each other
+        const blob = await send(`materials/${me.branch}-${me.batch}/${Date.now()}-${safeName}`, file, {
           access: "public",
           handleUploadUrl: `${API.defaults.baseURL}/upload/blob-token`,
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },

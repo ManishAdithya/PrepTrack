@@ -8,12 +8,16 @@ import Material from "../models/Material.js";
 import mongoose from "mongoose";
 import { getRules, scopeOf } from "../config/community.js";
 import { awardApprovalPoints, getScore } from "../utils/points.js";
-import { head } from "@vercel/blob";
-import { handleUpload } from "@vercel/blob/client";
+import { head, issueSignedToken } from "@vercel/blob";
+import { handleUpload, handleUploadPresigned } from "@vercel/blob/client";
 
-// Vercel Blob is used when its token is set (on Vercel, after connecting a Blob store).
+// Vercel Blob is used once a Blob store is connected to the project on Vercel.
 // The browser then uploads files straight to Blob, so large PDFs aren't limited by Vercel's request size.
-export const BLOB_ENABLED = () => !!process.env.BLOB_READ_WRITE_TOKEN;
+// Newer stores connect with BLOB_STORE_ID (signed in through Vercel OIDC) and use presigned uploads;
+// older ones connect with BLOB_READ_WRITE_TOKEN and use client tokens.
+export const BLOB_FLOW = () =>
+  process.env.BLOB_READ_WRITE_TOKEN ? "token" : process.env.BLOB_STORE_ID ? "presigned" : null;
+export const BLOB_ENABLED = () => !!BLOB_FLOW();
 const MAX_UPLOAD_MB = 50;
 const ALLOWED_TYPES = [
   "application/pdf",
@@ -32,17 +36,36 @@ const blobFolder = (user) => `materials/${user.branch}-${user.batch}/`;
 // ===============================
 export const getBlobUploadToken = async (req, res) => {
   if (!BLOB_ENABLED()) return res.status(503).json({ message: "File storage isn't set up yet." });
+  const limits = { allowedContentTypes: ALLOWED_TYPES, maximumSizeInBytes: MAX_UPLOAD_MB * 1024 * 1024 };
+  const checkPath = (pathname) => {
+    if (!pathname.startsWith(blobFolder(req.user)) || pathname.includes("..")) throw new Error("Invalid upload path");
+  };
   try {
+    if (BLOB_FLOW() === "presigned") {
+      // Permission to PUT exactly this one path, for 15 minutes
+      const result = await handleUploadPresigned({
+        body: req.body,
+        request: req,
+        getSignedToken: async (pathname) => {
+          checkPath(pathname);
+          const token = await issueSignedToken({
+            pathname,
+            operations: ["put"],
+            validUntil: Date.now() + 15 * 60 * 1000,
+            ...limits,
+          });
+          return { token, urlOptions: { ...limits } };
+        },
+      });
+      return res.json(result);
+    }
+
     const result = await handleUpload({
       body: req.body,
       request: req,
       onBeforeGenerateToken: async (pathname) => {
-        if (!pathname.startsWith(blobFolder(req.user))) throw new Error("Invalid upload path");
-        return {
-          allowedContentTypes: ALLOWED_TYPES,
-          maximumSizeInBytes: MAX_UPLOAD_MB * 1024 * 1024,
-          addRandomSuffix: true,
-        };
+        checkPath(pathname);
+        return limits;
       },
     });
     res.json(result);

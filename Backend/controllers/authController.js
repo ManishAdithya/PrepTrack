@@ -3,13 +3,16 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { addSecurityLog } from "./securityLogController.js";
 import { getRules, branchFromRoll, batchFromRoll } from "../config/community.js";
+import { BLOB_FLOW } from "./uploadController.js";
 
 // =============================
 // PUBLIC COMMUNITY RULES (shown on the signup and upload screens)
 // =============================
 export const getPublicRules = (req, res) => {
-  // `uploads` tells the frontend how to send files: straight to Vercel Blob, or to this server
-  res.json({ ...getRules(), uploads: process.env.BLOB_READ_WRITE_TOKEN ? "blob" : "local" });
+  // `uploads` tells the frontend how to send files: straight to Vercel Blob, or to this server.
+  // `blobFlow` says which Blob upload method the connected store uses.
+  const blobFlow = BLOB_FLOW();
+  res.json({ ...getRules(), uploads: blobFlow ? "blob" : "local", blobFlow });
 };
 
 // =============================
