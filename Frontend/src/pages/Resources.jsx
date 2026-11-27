@@ -216,6 +216,14 @@ export default function Resources() {
 
   const pickFile = (f) => {
     if (!f) return;
+    if (f.size > rules.maxUploadMb * 1024 * 1024) {
+      if (fileRef.current) fileRef.current.value = "";
+      return toast({
+        type: "error",
+        title: `This file is ${(f.size / 1024 / 1024).toFixed(1)} MB. The limit is ${rules.maxUploadMb} MB.`,
+        description: "Compress it (e.g. ilovepdf.com) or split it into parts, then upload again.",
+      });
+    }
     setFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
   };
@@ -498,7 +506,7 @@ export default function Resources() {
               <>
                 <UploadCloud size={26} className="text-zinc-400" />
                 <div className="mt-2 text-sm font-semibold text-white">Tap to choose a file</div>
-                <div className="text-xs text-zinc-500">PDF, PPT, Word or images · up to 50 MB</div>
+                <div className="text-xs text-zinc-500">PDF, PPT, Word or images · up to {rules.maxUploadMb} MB</div>
               </>
             )}
             <input ref={fileRef} type="file" className="hidden" accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,image/*" onChange={(e) => pickFile(e.target.files[0])} />

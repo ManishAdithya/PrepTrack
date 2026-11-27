@@ -48,6 +48,8 @@ export function getRules() {
     approveUpvotes: Number(process.env.AUTO_APPROVE_UPVOTES || 5),
     // An upload is hidden for moderator review once this many students report it
     hideReports: Number(process.env.AUTO_HIDE_REPORTS || 5),
+    // Biggest file a student can upload, in MB (Blob storage is only 1 GB; bigger files go on Drive)
+    maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 15),
   };
 }
 

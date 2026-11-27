@@ -22,7 +22,7 @@ import { handleUpload, handleUploadPresigned } from "@vercel/blob/client";
 export const BLOB_FLOW = () =>
   process.env.BLOB_READ_WRITE_TOKEN ? "token" : process.env.BLOB_STORE_ID ? "presigned" : null;
 export const BLOB_ENABLED = () => !!BLOB_FLOW();
-const MAX_UPLOAD_MB = 50;
+const MAX_UPLOAD_MB = () => getRules().maxUploadMb;
 const ALLOWED_TYPES = [
   "application/pdf",
   "application/vnd.ms-powerpoint",
@@ -40,7 +40,7 @@ const blobFolder = (user) => `materials/${user.branch}-${user.batch}/`;
 // ===============================
 export const getBlobUploadToken = async (req, res) => {
   if (!BLOB_ENABLED()) return res.status(503).json({ message: "File storage isn't set up yet." });
-  const limits = { allowedContentTypes: ALLOWED_TYPES, maximumSizeInBytes: MAX_UPLOAD_MB * 1024 * 1024 };
+  const limits = { allowedContentTypes: ALLOWED_TYPES, maximumSizeInBytes: MAX_UPLOAD_MB() * 1024 * 1024 };
   const checkPath = (pathname) => {
     if (!pathname.startsWith(blobFolder(req.user)) || pathname.includes("..")) throw new Error("Invalid upload path");
   };
@@ -105,7 +105,11 @@ export const LOCAL_STORAGE_DIR = path.join(path.dirname(fileURLToPath(import.met
 
 // Multer storage in memory
 const storage = multer.memoryStorage();
-export const upload = multer({ storage }).single("file");
+export const upload = (req, res, next) =>
+  multer({ storage, limits: { fileSize: MAX_UPLOAD_MB() * 1024 * 1024 } }).single("file")(req, res, (err) => {
+    if (err?.code === "LIMIT_FILE_SIZE") return res.status(413).json({ message: `Files must be under ${MAX_UPLOAD_MB()} MB.` });
+    next(err);
+  });
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
