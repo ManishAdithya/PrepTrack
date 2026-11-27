@@ -1,0 +1,13 @@
+# Firebase credentials
+Backend/config/serviceAccountKey.json
+Backend/node_modules/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+# Your private settings and locally stored uploads
+Backend/.env.local
+Backend/storage/
+
+# Real environment values (copy .env.example instead)
+Backend/.env
