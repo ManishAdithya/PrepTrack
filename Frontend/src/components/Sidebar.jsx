@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   BookOpen,
   MessagesSquare,
-  TrendingUp,
   Trophy,
   User,
   Sparkles,
@@ -27,7 +26,6 @@ export const studentSections = [
   {
     title: "Grow",
     links: [
-      { to: "/progress", label: "Progress", short: "Progress", icon: TrendingUp },
       { to: "/leaderboard", label: "Leaderboard", short: "Ranks", icon: Trophy },
       { to: "/profile", label: "Profile", icon: User },
     ],

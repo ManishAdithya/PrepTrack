@@ -4,10 +4,7 @@ import {
   Library,
   Crown,
   Flame,
-  Timer,
-  LineChart,
   MessagesSquare,
-  Rocket,
 } from "lucide-react";
 import { DEMO_MODE } from "../api.js";
 
@@ -111,21 +108,16 @@ export function useStreak() {
 export function computeBadges({
   contributions = 0,
   rank = null,
-  resultsCount = 0,
   streak = 0,
-  focusMinutes = 0,
   posts = 0,
-  readiness = 0,
 }) {
   return [
     { id: "first", label: "First Upload", desc: "Share your first material", icon: Upload, earned: contributions >= 1, color: "bg-white/[0.06]" },
     { id: "library", label: "Librarian", desc: "Upload 10 materials", icon: Library, earned: contributions >= 10, color: "bg-white/[0.06]" },
     { id: "podium", label: "Podium", desc: "Reach the top 3", icon: Crown, earned: !!rank && rank <= 3, color: "bg-white/[0.06]" },
     { id: "fire", label: "On Fire", desc: "3-day study streak", icon: Flame, earned: streak >= 3, color: "bg-white/[0.06]" },
-    { id: "focus", label: "Deep Focus", desc: "100 focus minutes", icon: Timer, earned: focusMinutes >= 100, color: "bg-white/[0.06]" },
-    { id: "tracker", label: "Self Tracker", desc: "Log 3 exam results", icon: LineChart, earned: resultsCount >= 3, color: "bg-white/[0.06]" },
+    { id: "week", label: "Week Warrior", desc: "7-day study streak", icon: Flame, earned: streak >= 7, color: "bg-white/[0.06]" },
     { id: "voice", label: "Community Voice", desc: "Start a discussion", icon: MessagesSquare, earned: posts >= 1, color: "bg-white/[0.06]" },
-    { id: "ready", label: "Exam Ready", desc: "Reach 80% readiness", icon: Rocket, earned: readiness >= 80, color: "bg-white/[0.06]" },
   ];
 }
 
@@ -139,7 +131,7 @@ const TIPS = [
   "Sleep is part of studying – memories consolidate overnight.",
   "Start with the topic you're avoiding. Ten minutes in, it's never as bad as it looked.",
   "Make a one-page cheatsheet per unit. Writing it is the revision.",
-  "Use 25-minute focus sprints with 5-minute breaks. Phone in another room.",
+  "Put your phone in another room while you study. Out of sight, out of mind.",
   "Before an exam, scan the whole paper first and do the questions you're sure of.",
   "Explain your wrong answers to yourself. Mistakes you understand don't repeat.",
   "Study with a friend once a week – the Forum is a great place to find one.",

@@ -171,6 +171,7 @@ export const login = async (req, res) => {
       rollNumber: user.rollNumber,
       // set after a CR resets the password: the app asks for a new one right away
       mustChangePassword: !!user.mustChangePassword,
+      isOwner: !!user.isOwner,
     });
   } catch (err) {
     console.error("Login Error:", err);

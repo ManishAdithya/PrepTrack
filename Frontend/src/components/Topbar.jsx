@@ -4,7 +4,6 @@ import { Search, Flame, FlaskConical } from "lucide-react";
 import { useGame } from "../context/GameContext.jsx";
 import { DEMO_MODE } from "../api";
 import NotificationBell from "./NotificationBell.jsx";
-import FocusChip from "./FocusTimer.jsx";
 import AccountMenu from "./AccountMenu.jsx";
 import { Brand } from "./NavSidebar.jsx";
 
@@ -65,9 +64,6 @@ export default function Topbar({ onOpenSearch }) {
             <span className="hidden font-medium text-zinc-400 lg:inline">day streak</span>
           </div>
 
-          <div className="hidden sm:block">
-            <FocusChip />
-          </div>
           <NotificationBell />
 
           <AccountMenu />

@@ -9,6 +9,9 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: { type: String, enum: ["student", "admin"], default: "student" },
 
+  // The person running PrepTrack: sees the owner dashboard (platform-wide totals). Set with `npm run make-owner`.
+  isOwner: { type: Boolean, default: false },
+
   // Leaderboard privacy: when true, classmates see "Hidden classmate" instead of the name
   hideFromLeaderboard: { type: Boolean, default: false },
 

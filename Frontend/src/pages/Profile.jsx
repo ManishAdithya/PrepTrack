@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Crown, Flame, Timer, Lock, Award, CalendarDays, Save, RotateCcw, Mail, Hash, GraduationCap, ShieldCheck } from "lucide-react";
+import { Sparkles, Crown, Flame, Lock, Award, CalendarDays, Save, RotateCcw, Mail, Hash, GraduationCap, ShieldCheck } from "lucide-react";
 import { useRules } from "../utils/rules.js";
 import API from "../api";
 import { useUser } from "../context/UserContext.jsx";
 import { useGame } from "../context/GameContext.jsx";
-import { useFocus } from "../context/FocusContext.jsx";
 import { useToast } from "../components/ui/Toast.jsx";
 import Card from "../components/ui/Card.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
@@ -63,7 +62,6 @@ function Heatmap() {
 export default function Profile() {
   const { setUser } = useUser();
   const game = useGame();
-  const focus = useFocus();
   const toast = useToast();
   const rules = useRules();
 
@@ -71,7 +69,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("personal");
   const [formData, setFormData] = useState({});
-  const [extra, setExtra] = useState({ results: 0, posts: 0, readiness: 0 });
+  const [extra, setExtra] = useState({ posts: 0 });
 
   const resetForm = (data) =>
     setFormData({
@@ -90,16 +88,8 @@ export default function Profile() {
         setProfile(data);
         resetForm(data);
 
-        const [res, disc, prog] = await Promise.all([
-          API.get("/result").catch(() => ({ data: [] })),
-          API.get("/discussions").catch(() => ({ data: [] })),
-          API.get("/progress").catch(() => ({ data: {} })),
-        ]);
-        setExtra({
-          results: res.data.length,
-          posts: disc.data.filter((d) => d.author === data.name).length,
-          readiness: prog.data.progressPercent || 0,
-        });
+        const disc = await API.get("/discussions").catch(() => ({ data: [] }));
+        setExtra({ posts: disc.data.filter((d) => d.author === data.name).length });
       } catch (err) {
         console.error("Error fetching profile:", err);
       } finally {
@@ -137,11 +127,8 @@ export default function Profile() {
   const badges = computeBadges({
     contributions: game.contributions,
     rank: game.rank,
-    resultsCount: extra.results,
     streak: game.streak.best,
-    focusMinutes: focus.stats.totalMinutes,
     posts: extra.posts,
-    readiness: extra.readiness,
   });
   const earned = badges.filter((b) => b.earned).length;
 
@@ -195,7 +182,7 @@ export default function Profile() {
           { icon: Sparkles, label: "Total XP", value: game.xp, g: "bg-white/[0.06]" },
           { icon: Crown, label: "Leaderboard rank", value: game.rank || 0, prefix: "#", g: "bg-white/[0.06]" },
           { icon: Flame, label: "Best streak", value: game.streak.best, suffix: " days", g: "bg-white/[0.06]" },
-          { icon: Timer, label: "Focus time", value: focus.stats.totalMinutes, suffix: " min", g: "bg-white/[0.06]" },
+          { icon: Award, label: "Uploads", value: game.contributions, g: "bg-white/[0.06]" },
         ].map((s) => (
           <Card key={s.label} className="p-5">
             <div className={`grid h-10 w-10 place-items-center rounded-xl ${s.g} shadow-lg`}>
@@ -287,22 +274,6 @@ export default function Profile() {
               </>
             )}
           </motion.div>
-
-          <div className="mt-6 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
-            <div className="mb-2 flex justify-between text-sm">
-              <span className="text-zinc-400">Overall progress</span>
-              <span className="font-semibold text-white">{extra.readiness}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <motion.div
-                className="h-full rounded-full bg-emerald-400 "
-                initial={{ width: 0 }}
-                animate={{ width: `${extra.readiness}%` }}
-                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              />
-            </div>
-            <div className="mt-1.5 text-xs text-zinc-500">of {profile.branch || "your"} goals completed</div>
-          </div>
 
           <div className="mt-6 flex justify-end gap-2">
             <button className="btn-ghost" onClick={() => resetForm(profile)}>

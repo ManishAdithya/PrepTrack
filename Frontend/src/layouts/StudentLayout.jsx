@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Timer, Upload, MessageSquarePlus, LogOut } from "lucide-react";
+import { Upload, MessageSquarePlus, LogOut } from "lucide-react";
 import Sidebar, { studentSections } from "../components/Sidebar.jsx";
 import Topbar from "../components/Topbar.jsx";
 import MobileNav from "../components/MobileNav.jsx";
 import CommandPalette from "../components/CommandPalette.jsx";
 import AuroraBackground from "../components/AuroraBackground.jsx";
-import { FocusProvider, useFocus } from "../context/FocusContext.jsx";
 import { GameProvider } from "../context/GameContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -17,18 +16,16 @@ const mobileLinks = allLinks.slice(0, 5).map((l) => ({ ...l, short: l.short || l
 function Shell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const focus = useFocus();
   const { logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const actions = useMemo(
     () => [
-      { label: focus.running ? "Pause focus timer" : "Start a 25-min focus session", icon: Timer, run: focus.running ? focus.pause : focus.start },
       { label: "Upload study material", icon: Upload, run: () => navigate("/resources?upload=1") },
       { label: "Start a discussion", icon: MessageSquarePlus, run: () => navigate("/discussions?new=1") },
       { label: "Log out", icon: LogOut, run: logout },
     ],
-    [focus.running, focus.pause, focus.start, navigate, logout]
+    [navigate, logout]
   );
 
   return (
@@ -58,9 +55,7 @@ function Shell() {
 export default function StudentLayout() {
   return (
     <GameProvider>
-      <FocusProvider>
-        <Shell />
-      </FocusProvider>
+      <Shell />
     </GameProvider>
   );
 }

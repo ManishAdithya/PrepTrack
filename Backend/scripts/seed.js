@@ -117,50 +117,7 @@ async function seedBatch(db, Y, hash) {
     Y.classmates.map(([name, score, contributions], i) => ({ studentId: id(name), score, contributions, rank: i + 1, flagged: i === C.length - 1, seed: true, __v: 0 }))
   );
 
-  // ---------- progress + results ----------
-  const progress = [];
-  const results = [];
-  Y.classmates.forEach(([name, , , readiness, confidence], i) => {
-    const uid = String(id(name));
-    progress.push({
-      userId: uid, branch: Y.branch, progressPercent: readiness, confidence, lastUpdated: at(-i),
-      prepSubjects: pick(S, 3).map((s, k) => ({ _id: new ObjectId(), subject: s, examDate: at(4 + k * 5, 4), confidence: ["High", "Medium", "Low"][(i + k) % 3] })),
-      seed: true, __v: 0,
-    });
-    S.forEach((subject, k) => {
-      const pct = Math.max(30, Math.min(98, readiness - 12 + k * 4 + ((i * 7 + k * 3) % 9) - 4));
-      const total = k % 2 ? 50 : 60;
-      results.push({ studentId: uid, subject, marks: Math.round((pct / 100) * total), totalMarks: total, percentage: pct, uploadedAt: at(-75 + k * 15 + i), seed: true, __v: 0 });
-    });
-  });
-  await db.collection("progresses").insertMany(progress);
 
-  // real students of this batch with no results get a sample history and exam plan
-  const realStudents = await db.collection("users").find({ ...scope, role: "student", seed: { $ne: true } }).toArray();
-  for (const s of realStudents) {
-    const uid = String(s._id);
-    if (await db.collection("results").countDocuments({ studentId: uid })) continue;
-    [62, 68, 71, 66, 77].forEach((pct, k) =>
-      results.push({ studentId: uid, subject: S[k], marks: Math.round((pct / 100) * 50), totalMarks: 50, percentage: pct, uploadedAt: at(-70 + k * 15), seed: true, __v: 0 })
-    );
-    await db.collection("progresses").updateOne(
-      { userId: uid },
-      {
-        $set: {
-          branch: Y.branch, progressPercent: 77, confidence: "Medium", lastUpdated: new Date(), seedPrep: true,
-          prepSubjects: [
-            { _id: new ObjectId(), subject: S[0], examDate: at(4, 4), confidence: "Medium" },
-            { _id: new ObjectId(), subject: S[1], examDate: at(9, 4), confidence: "High" },
-            { _id: new ObjectId(), subject: S[2], examDate: at(13, 4), confidence: "Low" },
-          ],
-        },
-        $setOnInsert: { __v: 0 },
-      },
-      { upsert: true }
-    );
-    console.log(`    gave ${s.name} sample results and exam plan`);
-  }
-  await db.collection("results").insertMany(results);
 
   // ---------- study materials (with real little PDF files) ----------
   fs.mkdirSync(STORAGE, { recursive: true });

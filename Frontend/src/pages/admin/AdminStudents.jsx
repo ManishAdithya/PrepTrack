@@ -12,7 +12,7 @@ import EmptyState from "../../components/ui/EmptyState.jsx";
 import Skeleton from "../../components/ui/Skeleton.jsx";
 import { container, item } from "../../components/ui/motion.js";
 
-// The class list for CRs. On purpose it shows NO marks, readiness or login activity —
+// The class list for CRs. On purpose it shows NO login activity or private student data —
 // a CR can only reset a forgotten password and choose the class's CRs (max 2).
 export default function AdminStudents() {
   const { user: me } = useAuth();

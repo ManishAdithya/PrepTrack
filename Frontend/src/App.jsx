@@ -3,11 +3,12 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { UserProvider } from "./context/UserContext.jsx";
 import { ToastProvider } from "./components/ui/Toast.jsx";
-import { RequireStudent, RequireAdmin, RequireLogin } from "./utils/guards.jsx";
+import { RequireStudent, RequireAdmin, RequireLogin, RequireOwner } from "./utils/guards.jsx";
 
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import ChangePassword from "./pages/ChangePassword.jsx";
+import OwnerDashboard from "./pages/OwnerDashboard.jsx";
 
 // Student pages
 import StudentLayout from "./layouts/StudentLayout.jsx";
@@ -16,7 +17,6 @@ import Discussions from "./pages/Discussions.jsx";
 import DiscussionDetail from "./pages/DiscussionDetail.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
 import Profile from "./pages/Profile.jsx";
-import Progress from "./pages/Progress.jsx";
 import Resources from "./pages/Resources.jsx";
 
 // Admin pages
@@ -50,7 +50,6 @@ export default function App() {
                 <Route path="/resources" element={<Resources />} />
                 <Route path="/discussions" element={<Discussions />} />
                 <Route path="/discussions/:id" element={<DiscussionDetail />} />
-                <Route path="/progress" element={<Progress />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
@@ -68,8 +67,14 @@ export default function App() {
               </Route>
             </Route>
 
+            {/* Owner dashboard (owner accounts only) */}
+            <Route element={<RequireOwner />}>
+              <Route path="/owner" element={<OwnerDashboard />} />
+            </Route>
+
             {/* fallback */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            {/* unknown or removed pages (e.g. old /progress links): home, which sends signed-out visitors to login */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ToastProvider>
       </UserProvider>

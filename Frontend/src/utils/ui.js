@@ -26,14 +26,6 @@ export const materialTypes = {
 
 export const typeOf = (t) => materialTypes[t] || materialTypes.note;
 
-export const confidenceStyles = {
-  High: { chip: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200", bar: "bg-emerald-400 ", text: "text-emerald-300", value: 90 },
-  Medium: { chip: "border-accent/25 bg-accent/10 text-accent", bar: "bg-accent ", text: "text-accent", value: 60 },
-  Low: { chip: "border-rose-400/25 bg-rose-400/10 text-rose-200", bar: "bg-rose-400 ", text: "text-rose-300", value: 30 },
-};
-
-export const confidenceOf = (c) => confidenceStyles[c] || confidenceStyles.Medium;
-
 export const statusStyles = {
   pending: { label: "Pending review", chip: "border-accent/25 bg-accent/10 text-accent" },
   approved: { label: "Approved", chip: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200" },
@@ -76,11 +68,3 @@ export const timeAgo = (d) => {
   if (s < 86400 * 30) return `${Math.floor(s / 86400)}d ago`;
   return new Date(d).toLocaleDateString();
 };
-
-// Readiness bands (from marks, see Backend/utils/readiness.js): green = strong, white = on track, red = needs work
-export const bandStyles = {
-  Strong: { text: "text-emerald-400", bar: "bg-emerald-400", chip: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" },
-  "On track": { text: "text-white", bar: "bg-accent", chip: "border-white/15 bg-white/[0.06] text-zinc-200" },
-  "Needs work": { text: "text-rose-400", bar: "bg-rose-400", chip: "border-rose-400/25 bg-rose-400/10 text-rose-300" },
-};
-export const bandOf = (b) => bandStyles[b] || { text: "text-zinc-400", bar: "bg-zinc-600", chip: "border-white/10 bg-white/[0.04] text-zinc-400" };

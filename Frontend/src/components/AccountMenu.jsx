@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, GraduationCap, KeyRound, LogOut, ShieldCheck, User } from "lucide-react";
+import { BarChart3, ChevronDown, GraduationCap, KeyRound, LogOut, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import Avatar from "./ui/Avatar.jsx";
 
@@ -70,6 +70,11 @@ export default function AccountMenu() {
                   <ShieldCheck size={16} className="text-accent" /> Open CR portal
                 </Link>
               ))}
+            {user?.isOwner && (
+              <Link to="/owner" className={item} role="menuitem">
+                <BarChart3 size={16} className="text-accent" /> Owner dashboard
+              </Link>
+            )}
             <Link to="/change-password" className={item} role="menuitem">
               <KeyRound size={16} className="text-zinc-500" /> Change password
             </Link>

@@ -1,11 +1,11 @@
 import React from "react";
-import { BookOpen, TrendingUp, MessagesSquare, Trophy } from "lucide-react";
+import { BookOpen, CalendarClock, MessagesSquare, Trophy } from "lucide-react";
 import { Brand } from "./NavSidebar.jsx";
 import AuroraBackground from "./AuroraBackground.jsx";
 
 const features = [
   { icon: BookOpen, text: "Notes, slides and PYQs from your class" },
-  { icon: TrendingUp, text: "Readiness from your actual marks" },
+  { icon: CalendarClock, text: "Exam dates with a live countdown" },
   { icon: MessagesSquare, text: "Ask doubts in your class forum" },
   { icon: Trophy, text: "Earn XP for sharing, climb the ranks" },
 ];

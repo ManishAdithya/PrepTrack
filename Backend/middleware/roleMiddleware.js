@@ -7,3 +7,9 @@ export const adminOnly = (req, res, next) => {
   }
   next();
 };
+
+// The owner dashboard: only accounts marked as owner. Everyone else gets "not found" so it isn't advertised.
+export const ownerOnly = (req, res, next) => {
+  if (!req.user?.isOwner) return res.status(404).json({ message: "Not found" });
+  next();
+};

@@ -6,14 +6,13 @@ import { LOCAL_STORAGE_DIR } from "./controllers/uploadController.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
-import progressRoutes from "./routes/progressRoutes.js";
-import resultRoutes from "./routes/resultRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import discussionRoutes from "./routes/discussionRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import examRoutes from "./routes/examRoutes.js";
+import ownerRoutes from "./routes/ownerRoutes.js";
 
 const app = express();
 
@@ -48,13 +47,12 @@ app.use("/api/users", userRoutes);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
-app.use("/api/progress", progressRoutes);
-app.use("/api/result", resultRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/discussions", discussionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/exams", examRoutes);
+app.use("/api/owner", ownerRoutes);
 
 // Uploaded files, when stored on this computer (local development without Vercel Blob)
 app.use("/files", express.static(LOCAL_STORAGE_DIR));

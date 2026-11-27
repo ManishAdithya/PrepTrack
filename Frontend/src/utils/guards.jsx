@@ -26,3 +26,11 @@ export function RequireLogin() {
   if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
+
+// Owner dashboard: owner accounts only (the server checks too)
+export function RequireOwner() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.isOwner) return <Navigate to="/" replace />;
+  return <Outlet />;
+}

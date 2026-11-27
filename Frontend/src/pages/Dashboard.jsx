@@ -1,32 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, Timer, Upload, Megaphone, ArrowUpRight, CalendarClock } from "lucide-react";
+import { ChevronRight, Upload, Megaphone, ArrowUpRight } from "lucide-react";
 import API from "../api";
 import { useUser } from "../context/UserContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useGame } from "../context/GameContext.jsx";
-import { useFocus } from "../context/FocusContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import Skeleton from "../components/ui/Skeleton.jsx";
-import ReadinessHelp from "../components/ReadinessHelp.jsx";
 import ExamCountdown, { UpcomingExams, useCountdownChoice } from "../components/ExamCountdown.jsx";
 import { daysLeft } from "../utils/exams.js";
-import { FocusFace } from "../components/FocusTimer.jsx";
 import { container, item } from "../components/ui/motion.js";
 import { greeting } from "../utils/gamification.js";
-import { bandOf, isNew, shortDate, timeAgo, typeOf } from "../utils/ui.js";
+import { isNew, shortDate, timeAgo, typeOf } from "../utils/ui.js";
 
 // One number with a label; the whole cell is a link
 // `to` starting with # scrolls within the page (a plain anchor); anything else is an app route
-function Glance({ to, label, value, sub, subClass = "text-zinc-500", extra }) {
+function Glance({ to, label, value, sub, subClass = "text-zinc-500" }) {
   const Tag = to.startsWith("#") ? "a" : Link;
   return (
     <Tag {...(to.startsWith("#") ? { href: to } : { to })} className="group min-w-0 flex-1 p-4 transition hover:bg-white/[0.03] sm:p-5">
       <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
         {label}
-        {extra}
       </div>
       <div className="mt-1 truncate font-display text-2xl font-bold text-white sm:text-3xl">{value}</div>
       <div className={`truncate text-xs ${subClass}`}>{sub}</div>
@@ -51,22 +47,19 @@ export default function Dashboard() {
   const { user } = useUser();
   const { user: authUser } = useAuth();
   const game = useGame();
-  const focus = useFocus();
   const navigate = useNavigate();
 
   const [materials, setMaterials] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [progress, setProgress] = useState(null);
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([API.get("/upload"), API.get("/notification"), API.get("/progress"), API.get("/exams").catch(() => ({ data: [] }))])
-      .then(([m, n, p, ex]) => {
+    Promise.all([API.get("/upload"), API.get("/notification"), API.get("/exams").catch(() => ({ data: [] }))])
+      .then(([m, n, ex]) => {
         setExams(ex.data);
         setMaterials(m.data.slice(0, 3));
         setAnnouncements(n.data);
-        setProgress(p.data);
       })
       .catch((err) => console.error("Dashboard Fetch Error:", err))
       .finally(() => setLoading(false));
@@ -74,7 +67,6 @@ export default function Dashboard() {
 
   const name = user?.name || authUser?.name || "Student";
   const firstName = name.split(" ")[0];
-  const readiness = progress?.readiness;
   // countdown: the exam the student picked, or the next one
   const { current, choose, live } = useCountdownChoice(exams);
   const thisWeek = live.filter((e) => daysLeft(e.date) <= 7).length;
@@ -104,12 +96,6 @@ export default function Dashboard() {
             )}
           </p>
         </div>
-        <button
-          onClick={focus.running ? focus.pause : focus.start}
-          className={`shrink-0 lg:hidden ${focus.running ? "btn-ghost" : "btn-primary"}`}
-        >
-          <Timer size={16} /> {focus.running ? "Pause" : "Focus"}
-        </button>
       </motion.div>
 
       {/* ===== Urgent announcement (only when there is one) ===== */}
@@ -138,14 +124,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            <Glance
-              to="/progress"
-              label="Readiness"
-              extra={<ReadinessHelp iconOnly />}
-              value={readiness?.overall != null ? `${readiness.overall}%` : "—"}
-              sub={readiness?.band || "Log a result"}
-              subClass={readiness?.band ? bandOf(readiness.band).text : "text-zinc-500"}
-            />
+            <Glance to="#exams" label="Upcoming" value={String(live.length)} sub={live.length === 1 ? "exam" : "exams"} />
             <Glance
               to="#exams"
               label="This week"
@@ -230,11 +209,6 @@ export default function Dashboard() {
 
         {/* ===== Side column (desktop) ===== */}
         <div className="hidden space-y-6 lg:block">
-          <Card className="p-5">
-            <h3 className="mb-4 font-display text-base font-bold text-white">Focus timer</h3>
-            <FocusFace size={170} />
-          </Card>
-
           {nearby.length > 0 && (
             <section>
               <SectionHead title="Around you" to="/leaderboard" linkLabel="Ranks" />

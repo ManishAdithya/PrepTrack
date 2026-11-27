@@ -42,6 +42,7 @@ export function AuthProvider({ children }) {
         batch: data.batch,
         rollNumber: data.rollNumber,
         mustChangePassword: !!data.mustChangePassword,
+        isOwner: !!data.isOwner,
       };
 
       setUser(u);
