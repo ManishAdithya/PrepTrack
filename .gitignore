@@ -14,3 +14,6 @@ Backend/.env
 
 # Vercel CLI project links
 .vercel
+
+# Claude Code local settings
+.claude/
