@@ -174,6 +174,11 @@ export const uploadMaterial = async (req, res) => {
     if (!subject) {
       return res.status(400).json({ message: "Pick the semester and subject this belongs to." });
     }
+    // older semesters take links only, to save storage
+    if (!linkUrl && !getRules().fileSemesters.includes(subject.semester)) {
+      if (blobUrl) await del(blobUrl).catch(() => {}); // don't keep a file we won't list
+      return res.status(400).json({ message: `S${subject.semester} only takes links. Put the file on Google Drive and share the link.` });
+    }
 
     // block exact duplicates (same title in the same subject)
     const duplicate = await Material.findOne({

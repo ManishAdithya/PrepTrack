@@ -65,6 +65,9 @@ export default function Resources() {
   const fileRef = useRef(null);
 
   const trusted = game.xp >= rules.trustedXp;
+  // only some semesters take files (S7 by default); the rest take links only, to save storage
+  const filesAllowed = (rules.fileSemesters || [7]).includes(upSem);
+  const upMode = filesAllowed ? mode : "link";
   const [reportTarget, setReportTarget] = useState(null);
   const [reportReason, setReportReason] = useState("");
   const [removeTarget, setRemoveTarget] = useState(null);
@@ -124,14 +127,14 @@ export default function Resources() {
     e.preventDefault();
     if (!upSubject) return toast({ type: "error", title: "Pick the subject first" });
     const pasted = link.trim();
-    if (mode === "file" && !file) return toast({ type: "error", title: "Pick a file first" });
-    if (mode === "link" && !/^https:\/\/[^\s/]+\.[^\s/]+/i.test(pasted)) {
+    if (upMode === "file" && !file) return toast({ type: "error", title: "Pick a file first" });
+    if (upMode === "link" && !/^https:\/\/[^\s/]+\.[^\s/]+/i.test(pasted)) {
       return toast({ type: "error", title: "Paste the full link", description: "It should start with https://" });
     }
     setUploading(true);
     try {
       let data;
-      if (mode === "link") {
+      if (upMode === "link") {
         ({ data } = await API.post("/upload", { title, type, subjectId: upSubject, link: pasted }));
       } else if (rules.uploads === "blob") {
         // Hosted on Vercel: the browser uploads straight to Vercel Blob, then sends the backend the URL
@@ -499,25 +502,38 @@ export default function Resources() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 p-1" role="tablist" aria-label="Upload a file or a link">
-            {[
-              ["file", UploadCloud, "File"],
-              ["link", Link2, "Link"],
-            ].map(([value, Icon, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={mode === value}
-                onClick={() => setMode(value)}
-                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition ${mode === value ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-              >
-                <Icon size={15} /> {label}
-              </button>
-            ))}
-          </div>
+          {filesAllowed ? (
+            <>
+              <div className="flex items-start gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-3 py-2.5 text-sm font-medium text-emerald-200">
+                <Link2 size={16} className="mt-0.5 shrink-0" />
+                <span>Uploading Links would be really helpful for you guys, due to limited storage availability</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 p-1" role="tablist" aria-label="Upload a file or a link">
+                {[
+                  ["file", UploadCloud, "File"],
+                  ["link", Link2, "Link"],
+                ].map(([value, Icon, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={upMode === value}
+                    onClick={() => setMode(value)}
+                    className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition ${upMode === value ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+                  >
+                    <Icon size={15} /> {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-zinc-400">
+              <Link2 size={14} className="mt-0.5 shrink-0 text-zinc-300" />
+              <span>S{upSem} takes links only, to save storage. Share a Google Drive or OneDrive link below.</span>
+            </div>
+          )}
 
-          {mode === "link" ? (
+          {upMode === "link" ? (
             <div className="space-y-2">
               <label className="label" htmlFor="up-link">Link</label>
               <input
@@ -531,7 +547,7 @@ export default function Resources() {
                 autoComplete="off"
               />
               <p className="text-xs leading-relaxed text-zinc-500">
-                For files over {rules.maxUploadMb} MB. Put it on Google Drive or OneDrive and set sharing to{" "}
+                {filesAllowed && `For files over ${rules.maxUploadMb} MB. `}Put it on Google Drive or OneDrive and set sharing to{" "}
                 <span className="font-semibold text-zinc-300">Anyone with the link can view</span>, or classmates will see "Request access".
               </p>
             </div>
