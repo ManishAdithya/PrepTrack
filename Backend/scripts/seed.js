@@ -1,6 +1,9 @@
-// Fills the database with realistic demo data for presentations.
+// Fills the database with realistic demo data for all four CSE batches (1st–4th year).
 //   npm --prefix Backend run seed         -> (re)create the demo data
 //   npm --prefix Backend run seed:clear   -> remove everything this script added
+// Each batch gets its own classmates, materials, discussions, announcements, leaderboard and results,
+// so you can log in as students of different years and check they never see each other.
+// A batch with no real CR gets one demo CR (the first classmate listed for it).
 // Everything inserted is tagged `seed: true`, so your real accounts and data are never touched,
 // except that real students get sample results / exam plans if they have none yet.
 import "../config/env.js";
@@ -20,20 +23,52 @@ const DAY = 86400000;
 const at = (days, hours = 0) => new Date(Date.now() + days * DAY + hours * 3600000);
 const pick = (arr, n) => arr.slice(0, n);
 
-const CLASSMATES = [
-  ["Ananya Iyer", 420, 30, 91, "High"],
-  ["Rohan Mehta", 365, 27, 86, "High"],
-  ["Priya Nair", 310, 23, 82, "High"],
-  ["Karthik Raj", 255, 19, 74, "Medium"],
-  ["Sneha Reddy", 198, 15, 69, "Medium"],
-  ["Arjun Menon", 160, 12, 63, "Medium"],
-  ["Diya Patel", 120, 9, 58, "Low"],
-  ["Vikram Singh", 85, 7, 52, "Low"],
-  ["Meera Krishnan", 45, 4, 47, "Low"],
-  ["Aditya Kumar", 20, 2, 39, "Low"],
-];
+// The batch now in 1st year: the academic year starts in July
+const now = new Date();
+const FIRST_YEAR_BATCH = now.getFullYear() - (now.getMonth() >= 6 ? 0 : 1);
 
-const SUBJECTS = ["Data Structures", "Operating Systems", "DBMS", "Computer Networks", "Theory of Computation", "Software Engineering"];
+// One entry per year of study. Classmates: [name, xp, uploads, readiness %, confidence]
+const YEARS = [
+  {
+    year: 1,
+    subjects: ["Programming in C", "Engineering Mathematics I", "Engineering Physics", "Digital Logic Design", "Problem Solving"],
+    classmates: [
+      ["Ishaan Verma", 210, 16, 84, "High"], ["Tara Joseph", 175, 13, 79, "High"], ["Nikhil Bose", 140, 11, 71, "Medium"],
+      ["Aarav Shah", 105, 8, 66, "Medium"], ["Kavya Pillai", 70, 6, 58, "Low"], ["Yash Gupta", 35, 3, 49, "Low"],
+    ],
+    announcements: [["Welcome to PrepTrack! Your first mid-terms start in 3 weeks.", true], ["C programming lab record submission due Friday.", false]],
+  },
+  {
+    year: 2,
+    subjects: ["Data Structures", "Discrete Mathematics", "Computer Organization", "Object Oriented Programming", "Probability & Statistics"],
+    classmates: [
+      ["Riya Sharma", 330, 24, 88, "High"], ["Dev Malhotra", 280, 21, 83, "High"], ["Neha Kulkarni", 230, 17, 76, "Medium"],
+      ["Sahil Khan", 180, 14, 70, "Medium"], ["Pooja Das", 120, 9, 61, "Low"], ["Manav Jain", 60, 5, 52, "Low"],
+    ],
+    announcements: [["End-semester timetable is out — Data Structures is the first paper.", true], ["Extra OOP lab session on Saturday, 10 am.", false]],
+  },
+  {
+    year: 3,
+    subjects: ["Operating Systems", "DBMS", "Computer Networks", "Theory of Computation", "Software Engineering"],
+    classmates: [
+      ["Ananya Iyer", 420, 30, 91, "High"], ["Rohan Mehta", 365, 27, 86, "High"], ["Priya Nair", 310, 23, 82, "High"],
+      ["Karthik Raj", 255, 19, 74, "Medium"], ["Sneha Reddy", 198, 15, 69, "Medium"], ["Arjun Menon", 160, 12, 63, "Medium"],
+      ["Diya Patel", 120, 9, 58, "Low"], ["Vikram Singh", 85, 7, 52, "Low"],
+    ],
+    announcements: [["End-semester timetable is out! Plan your revision with the exam tracker.", true], ["New DBMS PYQ bundle approved and live in Study Materials.", false]],
+  },
+  {
+    year: 4,
+    subjects: ["Compiler Design", "Machine Learning", "Cloud Computing", "Cryptography", "Distributed Systems"],
+    classmates: [
+      ["Aditi Rao", 390, 28, 89, "High"], ["Siddharth Nambiar", 320, 24, 84, "High"], ["Lakshmi Menon", 260, 19, 77, "Medium"],
+      ["Rahul Varma", 200, 15, 70, "Medium"], ["Fatima Sheikh", 140, 10, 62, "Low"], ["Gautam Pillai", 80, 6, 54, "Low"],
+    ],
+    announcements: [["Placement drive: resume submissions close this Friday.", true], ["Final-year project review panels are posted.", false]],
+  },
+].map((y) => ({ ...y, batch: FIRST_YEAR_BATCH - (y.year - 1) }));
+
+const ORDINAL = ["1st", "2nd", "3rd", "4th"];
 
 // Minimal one-page PDF so "Open" shows a real file
 function makePdf(title, lines) {
@@ -73,44 +108,47 @@ async function clear(db) {
   for (const f of fs.existsSync(STORAGE) ? fs.readdirSync(STORAGE) : []) if (f.startsWith("seed-")) fs.unlinkSync(path.join(STORAGE, f));
 }
 
-async function seed(db) {
-  const hash = await bcrypt.hash(DEMO_PASSWORD, 10);
-  const admin = await db.collection("users").findOne({ role: "admin", seed: { $ne: true } });
-  const adminName = admin?.name || "PrepTrack Team";
+async function seedBatch(db, Y, hash) {
+  const { batch, subjects: S } = Y;
+  const scope = { branch: "CSE", batch };
+  const yr = `${ORDINAL[Y.year - 1]} year`;
 
-  // ---------- classmates ----------
-  const users = CLASSMATES.map(([name], i) => ({
+  // ---------- classmates (first one becomes the demo CR if the batch has no real CR) ----------
+  const realCRs = await db.collection("users").countDocuments({ ...scope, role: "admin", seed: { $ne: true } });
+  const users = Y.classmates.map(([name], i) => ({
     _id: new ObjectId(),
     name,
-    email: `${name.toLowerCase().replace(/\s+/g, ".")}@demo.preptrack.edu`,
-    rollNumber: `AM.SC.U4CSE23${String(101 + i).padStart(3, "0")}`,
-    branch: "CSE",
-    role: "student",
+    email: `${name.toLowerCase().replace(/\s+/g, ".")}.${batch % 100}@demo.preptrack.edu`,
+    rollNumber: `AM.SC.U4CSE${batch % 100}${String(101 + i).padStart(3, "0")}`,
+    ...scope,
+    role: i === 0 && realCRs === 0 ? "admin" : "student",
     password: hash,
-    year: "3rd Year",
     seed: true,
     __v: 0,
   }));
   await db.collection("users").insertMany(users);
   const id = (name) => users.find((u) => u.name === name)._id;
-  console.log(`  added ${users.length} classmates`);
+  const C = Y.classmates.map(([name]) => name);
+  const cr = users.find((u) => u.role === "admin");
+  const realCR = realCRs ? await db.collection("users").findOne({ ...scope, role: "admin", seed: { $ne: true } }) : null;
+  const crName = cr?.name || realCR?.name || "Class CR";
 
   // ---------- leaderboard ----------
   await db.collection("leaderboards").insertMany(
-    CLASSMATES.map(([name, score, contributions], i) => ({ studentId: id(name), score, contributions, rank: i + 1, flagged: name === "Aditya Kumar", seed: true, __v: 0 }))
+    Y.classmates.map(([name, score, contributions], i) => ({ studentId: id(name), score, contributions, rank: i + 1, flagged: i === C.length - 1, seed: true, __v: 0 }))
   );
 
   // ---------- progress + results ----------
   const progress = [];
   const results = [];
-  CLASSMATES.forEach(([name, , , readiness, confidence], i) => {
+  Y.classmates.forEach(([name, , , readiness, confidence], i) => {
     const uid = String(id(name));
     progress.push({
       userId: uid, branch: "CSE", progressPercent: readiness, confidence, lastUpdated: at(-i),
-      prepSubjects: pick(SUBJECTS, 3).map((s, k) => ({ _id: new ObjectId(), subject: s, examDate: at(4 + k * 5, 4), confidence: ["High", "Medium", "Low"][(i + k) % 3] })),
+      prepSubjects: pick(S, 3).map((s, k) => ({ _id: new ObjectId(), subject: s, examDate: at(4 + k * 5, 4), confidence: ["High", "Medium", "Low"][(i + k) % 3] })),
       seed: true, __v: 0,
     });
-    pick(SUBJECTS, 5).forEach((subject, k) => {
+    S.forEach((subject, k) => {
       const pct = Math.max(30, Math.min(98, readiness - 12 + k * 4 + ((i * 7 + k * 3) % 9) - 4));
       const total = k % 2 ? 50 : 60;
       results.push({ studentId: uid, subject, marks: Math.round((pct / 100) * total), totalMarks: total, percentage: pct, uploadedAt: at(-75 + k * 15 + i), seed: true, __v: 0 });
@@ -118,13 +156,13 @@ async function seed(db) {
   });
   await db.collection("progresses").insertMany(progress);
 
-  // real students with no results get a sample history and exam plan
-  const realStudents = await db.collection("users").find({ role: "student", seed: { $ne: true } }).toArray();
+  // real students of this batch with no results get a sample history and exam plan
+  const realStudents = await db.collection("users").find({ ...scope, role: "student", seed: { $ne: true } }).toArray();
   for (const s of realStudents) {
     const uid = String(s._id);
     if (await db.collection("results").countDocuments({ studentId: uid })) continue;
     [62, 68, 71, 66, 77].forEach((pct, k) =>
-      results.push({ studentId: uid, subject: SUBJECTS[k], marks: Math.round((pct / 100) * 50), totalMarks: 50, percentage: pct, uploadedAt: at(-70 + k * 15), seed: true, __v: 0 })
+      results.push({ studentId: uid, subject: S[k], marks: Math.round((pct / 100) * 50), totalMarks: 50, percentage: pct, uploadedAt: at(-70 + k * 15), seed: true, __v: 0 })
     );
     await db.collection("progresses").updateOne(
       { userId: uid },
@@ -132,45 +170,43 @@ async function seed(db) {
         $set: {
           branch: "CSE", progressPercent: 77, confidence: "Medium", lastUpdated: new Date(), seedPrep: true,
           prepSubjects: [
-            { _id: new ObjectId(), subject: "Operating Systems", examDate: at(4, 4), confidence: "Medium" },
-            { _id: new ObjectId(), subject: "DBMS", examDate: at(9, 4), confidence: "High" },
-            { _id: new ObjectId(), subject: "Computer Networks", examDate: at(13, 4), confidence: "Low" },
+            { _id: new ObjectId(), subject: S[0], examDate: at(4, 4), confidence: "Medium" },
+            { _id: new ObjectId(), subject: S[1], examDate: at(9, 4), confidence: "High" },
+            { _id: new ObjectId(), subject: S[2], examDate: at(13, 4), confidence: "Low" },
           ],
         },
         $setOnInsert: { __v: 0 },
       },
       { upsert: true }
     );
-    console.log(`  gave ${s.name} sample results and exam plan`);
+    console.log(`    gave ${s.name} sample results and exam plan`);
   }
   await db.collection("results").insertMany(results);
 
   // ---------- study materials (with real little PDF files) ----------
   fs.mkdirSync(STORAGE, { recursive: true });
   const voters = users.map((u) => u._id);
+  const n = (i) => C[i % C.length];
   const MATERIALS = [
-    ["Operating Systems – Unit 3: Memory Management", "note", "Ananya Iyer", "approved", "trusted", 14, -1],
-    ["DBMS – Previous Year Questions (2021–2025)", "pyq", "Rohan Mehta", "approved", "trusted", 18, -2],
-    ["Computer Networks – TCP/IP Slides", "ppt", "Priya Nair", "approved", "community", 7, -3],
-    ["Data Structures – Trees & Graphs Cheatsheet", "note", "Karthik Raj", "approved", "moderator", 9, -4],
-    ["Theory of Computation – PYQ Solutions", "pyq", "Ananya Iyer", "approved", "trusted", 11, -6],
-    ["Software Engineering – UML Diagrams Guide", "ppt", "Sneha Reddy", "approved", "community", 5, -7],
-    ["Operating Systems – Deadlock Practice Problems", "pyq", "Rohan Mehta", "approved", "trusted", 8, -9],
-    ["Computer Networks – Subnetting Practice Set", "pyq", "Arjun Menon", "pending", "", 2, -1],
-    ["Discrete Maths – Graph Theory Notes", "note", "Diya Patel", "pending", "", 2, -2],
-    ["DBMS – Normalization Slides", "ppt", "Vikram Singh", "revision", "", 1, -5],
-    ["OS Textbook (full scan)", "note", "Meera Krishnan", "reported", "", 0, -3],
-    ["Random lecture photos", "ppt", "Aditya Kumar", "rejected", "", 0, -8],
+    [`${S[0]} – Unit 3 Notes`, "note", n(0), "approved", "trusted", 5, -1],
+    [`${S[1]} – Previous Year Questions`, "pyq", n(1), "approved", "trusted", 5, -2],
+    [`${S[2]} – Lecture Slides`, "ppt", n(2), "approved", "community", 4, -3],
+    [`${S[3]} – Quick Revision Cheatsheet`, "note", n(3), "approved", "moderator", 3, -4],
+    [`${S[4]} – PYQ Solutions`, "pyq", n(0), "approved", "trusted", 4, -6],
+    [`${S[2]} – Practice Problem Set`, "pyq", n(4), "pending", "", 2, -1],
+    [`${S[1]} – Unit 2 Slides`, "ppt", n(5), "revision", "", 1, -5],
+    [`${S[0]} textbook (full scan)`, "note", n(4), "reported", "", 0, -3],
+    ["Random lecture photos", "ppt", n(5), "rejected", "", 0, -8],
   ];
   const materials = MATERIALS.map(([title, type, by, status, approvedBy, votes, days], i) => {
-    const file = `seed-${i + 1}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}.pdf`;
-    fs.writeFileSync(path.join(STORAGE, file), makePdf(title, [`Uploaded by ${by} for CSE`, "Sample material created for the PrepTrack demo.", "", "1. Key concepts", "2. Important questions", "3. Quick revision points"]));
+    const file = `seed-${batch}-${i + 1}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}.pdf`;
+    fs.writeFileSync(path.join(STORAGE, file), makePdf(title, [`Uploaded by ${by} for CSE ${batch} batch (${yr})`, "Sample material created for the PrepTrack demo.", "", "1. Key concepts", "2. Important questions", "3. Quick revision points"]));
     const uploader = id(by);
     const others = voters.filter((v) => !v.equals(uploader));
     return {
-      title, branch: "CSE", type, uploadedBy: by, uploaderId: uploader,
+      title, ...scope, type, uploadedBy: by, uploaderId: uploader,
       releaseDate: at(days), fileUrl: `${BACKEND_URL}/files/${file}`,
-      status, approvedBy, reviewNotes: status === "revision" ? "Please add the remaining slides on BCNF." : status === "rejected" ? "Not study material." : "",
+      status, approvedBy, reviewNotes: status === "revision" ? "Please add the remaining slides for the last topic." : status === "rejected" ? "Not study material." : "",
       upvotes: others.slice(0, votes),
       reports: status === "reported" ? ["Copyrighted or paid material", "Copyrighted or paid material", "Unreadable / low quality"].map((reason, k) => ({ _id: new ObjectId(), userId: others[k], reason, createdAt: at(days + 0.5 + k * 0.1) })) : [],
       pointsAwarded: status === "approved",
@@ -179,59 +215,63 @@ async function seed(db) {
     };
   });
   await db.collection("materials").insertMany(materials);
-  console.log(`  added ${materials.length} study materials (files in Backend/storage)`);
 
   // ---------- discussions ----------
   const c = (author, text, d) => ({ _id: new ObjectId(), author, text, createdAt: at(d) });
+  const tag = (s) => s.toLowerCase().split(/\s+/)[0];
   const DISCUSSIONS = [
-    ["Best way to revise page replacement algorithms in one night?", "Rohan Mehta", ["os", "mid-terms", "tips"], -0.3, [
-      c("Priya Nair", "Solve two numericals each for FIFO, LRU and Optimal. Belady's anomaly is a favourite viva question!", -0.25),
-      c("Sneha Reddy", "Draw the frame tables by hand – it sticks better than reading.", -0.2),
-      c("Ananya Iyer", "There's a deadlock + memory cheatsheet in Study Materials 🙌", -0.1)]],
-    ["Which DBMS units carry the most weight in the end-sem?", "Diya Patel", ["dbms", "pyqs"], -1, [
-      c("Rohan Mehta", "Normalization and transactions come every single year.", -0.9),
-      c("Karthik Raj", "Check the DBMS PYQ bundle – 2023 and 2024 had the same 10-mark question.", -0.8)]],
-    ["Study group for Computer Networks this weekend?", "Sneha Reddy", ["cn", "study-group"], -2, [
-      c("Arjun Menon", "I'm in! Library, Saturday 10 am?", -1.9)]],
-    ["How do you stay consistent during exam season?", "Ananya Iyer", ["motivation", "productivity"], -4, [
-      c("Priya Nair", "Pomodoro + the focus timer here. Four sessions a day minimum.", -3.9),
-      c("Rohan Mehta", "Leaderboard competition with my roommate 😅", -3.8),
-      c("Vikram Singh", "Streaks! I don't want to break mine.", -3.5)]],
-    ["Can someone explain the difference between DFA and NFA simply?", "Aditya Kumar", ["toc", "doubt"], -0.5, []],
+    [`Best way to revise ${S[0]} in one night?`, n(1), [tag(S[0]), "tips"], -0.3, [
+      c(n(2), "Solve the PYQs first, then read only what you got wrong.", -0.25),
+      c(n(3), "Write a one-page summary per unit — it sticks better than re-reading.", -0.2),
+      c(n(0), `There's a ${S[0]} notes upload in Study Materials 🙌`, -0.1)]],
+    [`Which ${S[1]} units carry the most weight in the end-sem?`, n(4), [tag(S[1]), "pyqs"], -1, [
+      c(n(1), "Units 2 and 4 come every single year.", -0.9),
+      c(n(3), "Check the PYQ bundle — the last two papers repeated a 10-mark question.", -0.8)]],
+    [`Study group for ${S[2]} this weekend?`, n(3), [tag(S[2]), "study-group"], -2, [
+      c(n(5), "I'm in! Library, Saturday 10 am?", -1.9)]],
+    ["How do you stay consistent during exam season?", n(0), ["motivation", "productivity"], -4, [
+      c(n(2), "Pomodoro + the focus timer here. Four sessions a day minimum.", -3.9),
+      c(n(1), "Leaderboard competition with my roommate 😅", -3.8)]],
+    [`Can someone explain the hardest topic in ${S[3]} simply?`, n(5), [tag(S[3]), "doubt"], -0.5, []],
   ];
   await db.collection("discussions").insertMany(
-    DISCUSSIONS.map(([title, author, tags, d, comments]) => ({ title, body: "", author, branch: "CSE", tags, comments, commentsCount: comments.length, createdAt: at(d), seed: true, __v: 0 }))
+    DISCUSSIONS.map(([title, author, tags, d, comments]) => ({ title, body: "", author, ...scope, tags, comments, commentsCount: comments.length, createdAt: at(d), seed: true, __v: 0 }))
   );
-  console.log(`  added ${DISCUSSIONS.length} discussions`);
 
-  // ---------- announcements ----------
-  const NOTES = [
-    ["End-semester exam timetable is out! Plan your revision with the exam tracker.", "All Users", true, -0.2],
-    ["New DBMS PYQ bundle approved and live in Study Materials.", "CSE", false, -1],
-    ["Hackathon registrations close this Friday – find teammates in the Forum!", "All Users", false, -3],
-    ["Library open till midnight during exam week.", "All Users", false, -5],
-  ];
+  // ---------- announcements (from this batch's CR) ----------
   await db.collection("notifications").insertMany(
-    NOTES.map(([message, audience, priority, d]) => ({ message, audience, priority, createdBy: adminName, createdAt: at(d), readBy: [], seed: true, __v: 0 }))
+    [...Y.announcements, ["Library open till midnight during exam week.", false]].map(([message, priority], i) => ({
+      message, audience: "All Users", priority, createdBy: crName, ...scope, createdAt: at(-0.2 - i * 2), readBy: [], seed: true, __v: 0,
+    }))
   );
 
-  // ---------- branches ----------
+  // ---------- security log history ----------
+  const LOGS = [
+    [n(0), "Login Success", "User logged in", -2], [n(4), "Login Failure", "Wrong password", -5],
+    [n(1), "Login Success", "User logged in", -8], [n(5), "Login Failure", "Wrong password", -20],
+  ];
+  await db.collection("securitylogs").insertMany(
+    LOGS.map(([name, eventType, details, h], i) => ({ userId: id(name), eventType, details, ipAddress: `10.${Y.year}.${4 + i}.${30 + i * 7}`, createdAt: at(0, h), updatedAt: at(0, h), seed: true, __v: 0 }))
+  );
+
+  console.log(`  CSE ${batch} batch (${yr}): ${users.length} classmates, ${materials.length} materials, ${DISCUSSIONS.length} discussions` +
+    (cr ? ` — demo CR: ${cr.email}` : ` — CR: ${realCR?.name} (real account)`));
+  return cr ? [`${yr}`.padEnd(9) + cr.email + "  (CR)", `${yr}`.padEnd(9) + users[1].email] : [`${yr}`.padEnd(9) + users[1].email];
+}
+
+async function seed(db) {
+  const hash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  const logins = [];
+  for (const Y of YEARS) logins.push(...(await seedBatch(db, Y, hash)));
+
+  // ---------- branches (just the list shown on the Branches page) ----------
   const BRANCHES = [["Computer Science & Engineering", "CSE"], ["Electronics & Communication", "ECE"], ["Mechanical Engineering", "MECH"], ["Civil Engineering", "CIVIL"], ["AI & Machine Learning", "AIML"]];
   for (const [branchName, branchCode] of BRANCHES) {
     if (!(await db.collection("branches").findOne({ branchCode })))
       await db.collection("branches").insertOne({ branchName, branchCode, createdAt: at(-300), updatedAt: at(-300), seed: true, __v: 0 });
   }
 
-  // ---------- security log history ----------
-  const LOGS = [
-    ["Ananya Iyer", "Login Success", "User logged in", -2], ["Vikram Singh", "Login Failure", "Wrong password", -5],
-    ["Rohan Mehta", "Login Success", "User logged in", -8], ["Aditya Kumar", "Login Failure", "Wrong password", -20],
-    ["Aditya Kumar", "Login Failure", "Wrong password", -20.2], ["Priya Nair", "Admin Action", "Profile updated", -30],
-  ];
-  await db.collection("securitylogs").insertMany(
-    LOGS.map(([name, eventType, details, h], i) => ({ userId: id(name), eventType, details, ipAddress: `10.21.${4 + i}.${30 + i * 7}`, createdAt: at(0, h), updatedAt: at(0, h), seed: true, __v: 0 }))
-  );
-  console.log("  added announcements, branches and security log history");
+  console.log(`\n  Try logging in as (password: ${DEMO_PASSWORD}):\n` + logins.map((l) => "    " + l).join("\n"));
 }
 
 const mode = process.argv[2];
