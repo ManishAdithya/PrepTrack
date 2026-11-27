@@ -96,6 +96,20 @@ async function verifyBlobUrl(fileUrl, user) {
   }
 }
 
+// A link a student pasted instead of a file (big scans on Google Drive, OneDrive, …): https only
+export function cleanLink(raw) {
+  const s = String(raw || "").trim();
+  if (!s || s.length > 2000) return null;
+  let url;
+  try {
+    url = new URL(s);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || !url.hostname.includes(".") || url.username || url.password) return null;
+  return url.toString();
+}
+
 // A material inside the user's own branch + batch, or null (other batches' uploads answer "not found")
 const findInScope = (id, user) =>
   mongoose.isValidObjectId(id) ? Material.findOne({ _id: id, ...scopeOf(user) }) : null;
@@ -133,10 +147,15 @@ export const uploadMaterial = async (req, res) => {
     // Always the uploader's own branch + batch (never taken from the request)
     const { branch, batch } = scopeOf(req.user);
 
-    // The file arrives either as multipart (local development) or as a Vercel Blob URL
-    // that the browser already uploaded to
-    const blobUrl = !req.file && BLOB_ENABLED() ? req.body.fileUrl : null;
-    if (!req.file && !blobUrl) {
+    // The material is either a link the student pasted, or a file that arrives as multipart
+    // (local development) or as a Vercel Blob URL the browser already uploaded to
+    const wantsLink = !req.file && req.body.link !== undefined;
+    const linkUrl = wantsLink ? cleanLink(req.body.link) : null;
+    if (wantsLink && !linkUrl) {
+      return res.status(400).json({ message: "Paste a full link starting with https://" });
+    }
+    const blobUrl = !req.file && !wantsLink && BLOB_ENABLED() ? req.body.fileUrl : null;
+    if (!req.file && !blobUrl && !linkUrl) {
       return res.status(400).json({ message: "No file uploaded" });
     }
     if (blobUrl && !(await verifyBlobUrl(blobUrl, req.user))) {
@@ -171,7 +190,9 @@ export const uploadMaterial = async (req, res) => {
     const filename = req.file ? `${Date.now()}-${req.file.originalname.replace(/[^\w.-]+/g, "_")}` : null;
     let fileUrl;
 
-    if (blobUrl) {
+    if (linkUrl) {
+      fileUrl = linkUrl;
+    } else if (blobUrl) {
       fileUrl = blobUrl;
     } else if (process.env.VERCEL) {
       // Vercel has no permanent disk, so local storage isn't an option there
@@ -219,6 +240,7 @@ export const uploadMaterial = async (req, res) => {
       uploaderId: req.user.id,
       releaseDate,
       fileUrl,
+      isLink: !!linkUrl,
       status: trusted ? "approved" : "pending",
       approvedBy: trusted ? "trusted" : "",
     });
@@ -398,7 +420,9 @@ export const deleteMaterial = async (req, res) => {
 
     // best effort: a missing file must not block removing the listing
     try {
-      if (material.fileUrl.includes(".blob.vercel-storage.com/")) await del(material.fileUrl);
+      if (material.isLink) {
+        // a pasted link: nothing of ours to delete
+      } else if (material.fileUrl.includes(".blob.vercel-storage.com/")) await del(material.fileUrl);
       else if (material.fileUrl.includes("/files/")) {
         await fs.unlink(path.join(LOCAL_STORAGE_DIR, path.basename(material.fileUrl.split("/files/")[1])));
       }

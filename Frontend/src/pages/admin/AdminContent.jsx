@@ -192,7 +192,7 @@ export default function AdminContent() {
                         <div className="relative text-center text-white">
                           <t.icon size={40} className="mx-auto transition group-hover:scale-110" />
                           <div className="mt-2 flex items-center gap-1.5 text-sm font-semibold">
-                            Open document <ExternalLink size={14} />
+                            {selected.isLink ? "Open link" : "Open document"} <ExternalLink size={14} />
                           </div>
                         </div>
                       </a>

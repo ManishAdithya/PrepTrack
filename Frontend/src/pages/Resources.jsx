@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Upload, ArrowUpRight, Search, UploadCloud, FileCheck2, ThumbsUp, Flag, ShieldCheck, Hourglass, ChevronRight, ArrowLeft, Trash2, FolderOpen, BookOpen } from "lucide-react";
+import { Upload, ArrowUpRight, Search, UploadCloud, FileCheck2, ThumbsUp, Flag, ShieldCheck, Hourglass, ChevronRight, ArrowLeft, Trash2, FolderOpen, BookOpen, Link2 } from "lucide-react";
 import API from "../api";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useGame } from "../context/GameContext.jsx";
@@ -58,6 +58,8 @@ export default function Resources() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("note");
   const [file, setFile] = useState(null);
+  const [mode, setMode] = useState("file"); // "file" or "link" (big files live on Google Drive etc.)
+  const [link, setLink] = useState("");
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -121,11 +123,17 @@ export default function Resources() {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!upSubject) return toast({ type: "error", title: "Pick the subject first" });
-    if (!file) return toast({ type: "error", title: "Pick a file first" });
+    const pasted = link.trim();
+    if (mode === "file" && !file) return toast({ type: "error", title: "Pick a file first" });
+    if (mode === "link" && !/^https:\/\/[^\s/]+\.[^\s/]+/i.test(pasted)) {
+      return toast({ type: "error", title: "Paste the full link", description: "It should start with https://" });
+    }
     setUploading(true);
     try {
       let data;
-      if (rules.uploads === "blob") {
+      if (mode === "link") {
+        ({ data } = await API.post("/upload", { title, type, subjectId: upSubject, link: pasted }));
+      } else if (rules.uploads === "blob") {
         // Hosted on Vercel: the browser uploads straight to Vercel Blob, then sends the backend the URL
         const { upload, uploadPresigned } = await import("@vercel/blob/client");
         const send = rules.blobFlow === "presigned" ? uploadPresigned : upload;
@@ -156,6 +164,8 @@ export default function Resources() {
       setQuery("");
       setTitle("");
       setFile(null);
+      setLink("");
+      setMode("file");
       closeUpload();
 
       celebrate();
@@ -218,10 +228,13 @@ export default function Resources() {
     if (!f) return;
     if (f.size > rules.maxUploadMb * 1024 * 1024) {
       if (fileRef.current) fileRef.current.value = "";
+      setMode("link");
+      if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
       return toast({
         type: "error",
         title: `This file is ${(f.size / 1024 / 1024).toFixed(1)} MB. The limit is ${rules.maxUploadMb} MB.`,
-        description: "Compress it (e.g. ilovepdf.com) or split it into parts, then upload again.",
+        description: "Upload it to Google Drive and paste the link here instead.",
+        duration: 6000,
       });
     }
     setFile(f);
@@ -364,7 +377,13 @@ export default function Resources() {
                             {m.title}
                           </a>
                           <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-500">
-                            <span>{t.label}</span>·<span className="truncate">{m.uploadedBy || "Anonymous"}</span>·<span>{shortDate(m.releaseDate)}</span>
+                            <span>{t.label}</span>
+                            {m.isLink && (
+                              <span className="inline-flex items-center gap-0.5 rounded bg-white/[0.06] px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-zinc-300">
+                                <Link2 size={10} /> Link
+                              </span>
+                            )}
+                            ·<span className="truncate">{m.uploadedBy || "Anonymous"}</span>·<span>{shortDate(m.releaseDate)}</span>
                             {searching && m.semester && (
                               <>
                                 · <span className="text-zinc-400">S{m.semester} {m.subject}</span>
@@ -480,6 +499,43 @@ export default function Resources() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 p-1" role="tablist" aria-label="Upload a file or a link">
+            {[
+              ["file", UploadCloud, "File"],
+              ["link", Link2, "Link"],
+            ].map(([value, Icon, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={mode === value}
+                onClick={() => setMode(value)}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition ${mode === value ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              >
+                <Icon size={15} /> {label}
+              </button>
+            ))}
+          </div>
+
+          {mode === "link" ? (
+            <div className="space-y-2">
+              <label className="label" htmlFor="up-link">Link</label>
+              <input
+                id="up-link"
+                type="url"
+                inputMode="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://drive.google.com/…"
+                className="input"
+                autoComplete="off"
+              />
+              <p className="text-xs leading-relaxed text-zinc-500">
+                For files over {rules.maxUploadMb} MB. Put it on Google Drive or OneDrive and set sharing to{" "}
+                <span className="font-semibold text-zinc-300">Anyone with the link can view</span>, or classmates will see "Request access".
+              </p>
+            </div>
+          ) : (
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -511,6 +567,7 @@ export default function Resources() {
             )}
             <input ref={fileRef} type="file" className="hidden" accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,image/*" onChange={(e) => pickFile(e.target.files[0])} />
           </div>
+          )}
 
           <div>
             <label className="label" htmlFor="up-title">Title</label>

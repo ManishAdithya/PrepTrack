@@ -21,6 +21,8 @@ const materialSchema = new mongoose.Schema(
     uploaderId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     releaseDate: { type: Date, required: true },
     fileUrl: { type: String, required: true },
+    // true when fileUrl is a link the student pasted (Google Drive etc.), not a file we store
+    isLink: { type: Boolean, default: false },
 
     // 🔥 REQUIRED for admin Content Management
     // "reported" = hidden from students after too many reports, waiting for a moderator
