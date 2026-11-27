@@ -18,16 +18,16 @@ export const studentSections = [
   {
     title: "Learn",
     links: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/resources", label: "Study Materials", icon: BookOpen },
-      { to: "/discussions", label: "Forum", icon: MessagesSquare, end: false },
+      { to: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard },
+      { to: "/resources", label: "Study Materials", short: "Notes", icon: BookOpen },
+      { to: "/discussions", label: "Forum", short: "Forum", icon: MessagesSquare, end: false },
     ],
   },
   {
     title: "Grow",
     links: [
-      { to: "/progress", label: "Progress", icon: TrendingUp },
-      { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+      { to: "/progress", label: "Progress", short: "Progress", icon: TrendingUp },
+      { to: "/leaderboard", label: "Leaderboard", short: "Ranks", icon: Trophy },
       { to: "/profile", label: "Profile", icon: User },
     ],
   },
@@ -36,28 +36,19 @@ export const studentSections = [
 function LevelCard() {
   const { level, xp } = useGame();
   return (
-    <Link
-      to="/profile"
-      className="relative block overflow-hidden rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-600/25 via-fuchsia-600/10 to-cyan-500/10 p-4 transition hover:border-violet-400/40"
-    >
-      <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-fuchsia-500/30 blur-2xl" />
-      <div className="relative flex items-center justify-between">
-        <div className="text-xs font-semibold uppercase tracking-wider text-violet-200/80">Level {level.level}</div>
-        <div className="flex items-center gap-1 text-xs font-bold text-amber-200">
+    <Link to="/profile" className="block rounded-xl border border-white/[0.08] bg-ink-800 p-3 transition hover:border-white/20">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-semibold uppercase tracking-wider text-zinc-400">Level {level.level}</span>
+        <span className="flex items-center gap-1 font-bold text-accent">
           <Sparkles size={12} /> {xp} XP
-        </div>
+        </span>
       </div>
-      <div className="relative mt-1 font-display text-base font-bold text-white">{level.title}</div>
-      <div className="relative mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-        <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-300"
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.round(level.progress * 100)}%` }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-        />
+      <div className="mt-1 text-sm font-bold text-white">{level.title}</div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-accent" style={{ width: `${Math.round(level.progress * 100)}%` }} />
       </div>
-      <div className="relative mt-2 text-[11px] text-slate-400">
-        {level.nextTitle ? `${level.toNext} XP to ${level.nextTitle}` : "Max level reached 👑"}
+      <div className="mt-1.5 text-[11px] text-zinc-500">
+        {level.nextTitle ? `${level.toNext} XP to ${level.nextTitle}` : "Max level reached"}
       </div>
     </Link>
   );

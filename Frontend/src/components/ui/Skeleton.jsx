@@ -3,7 +3,7 @@ import React from "react";
 export default function Skeleton({ className = "" }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl bg-white/[0.05] before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/[0.08] before:to-transparent ${className}`}
+      className={`relative overflow-hidden rounded-2xl bg-white/[0.05] before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer /[0.08] ${className}`}
     />
   );
 }

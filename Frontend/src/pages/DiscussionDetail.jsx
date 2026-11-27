@@ -77,23 +77,23 @@ export default function DiscussionDetail() {
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-4xl space-y-5">
       <motion.div variants={item}>
-        <Link to="/discussions" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 transition hover:text-white">
+        <Link to="/discussions" className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-400 transition hover:text-white">
           <ArrowLeft size={16} /> Back to forum
         </Link>
       </motion.div>
 
       {/* Question */}
       <Card className="p-6" glow="rgba(244,114,182,0.12)">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-fuchsia-600/15 via-transparent to-violet-600/10" />
+        <div className="absolute inset-0 -z-10 bg-accent/15 " />
         <div className="flex items-center gap-3">
           <Avatar name={post.author} size={44} />
           <div>
             <div className="font-semibold text-white">{post.author}</div>
-            <div className="text-xs text-slate-400">asked {timeAgo(post.createdAt)}</div>
+            <div className="text-xs text-zinc-400">asked {timeAgo(post.createdAt)}</div>
           </div>
         </div>
         <h1 className="mt-4 text-2xl font-bold leading-snug text-white sm:text-3xl">{post.title}</h1>
-        {post.body && <p className="mt-3 text-slate-300">{post.body}</p>}
+        {post.body && <p className="mt-3 text-zinc-300">{post.body}</p>}
         <div className="mt-4 flex flex-wrap gap-2">
           {post.tags.filter(Boolean).map((t, i) => (
             <span key={i} className="chip">#{t}</span>
@@ -105,7 +105,7 @@ export default function DiscussionDetail() {
       <Card className="p-0" spotlight={false}>
         <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
           <h2 className="section-title text-base">
-            <MessageCircle size={17} className="text-fuchsia-300" /> {post.comments.length} {post.comments.length === 1 ? "reply" : "replies"}
+            <MessageCircle size={17} className="text-accent" /> {post.comments.length} {post.comments.length === 1 ? "reply" : "replies"}
           </h2>
         </div>
 
@@ -113,7 +113,7 @@ export default function DiscussionDetail() {
           {post.comments.length === 0 ? (
             <div className="py-10 text-center">
               <div className="text-4xl">💬</div>
-              <p className="mt-2 text-slate-400">No replies yet. Be the first to help out!</p>
+              <p className="mt-2 text-zinc-400">No replies yet. Be the first to help out!</p>
             </div>
           ) : (
             <AnimatePresence initial={false}>
@@ -129,14 +129,14 @@ export default function DiscussionDetail() {
                   >
                     <Avatar name={c.author} size={34} />
                     <div className={`max-w-[80%] ${mine ? "items-end text-right" : ""} flex flex-col`}>
-                      <div className="mb-1 text-xs text-slate-400">
-                        <span className="font-semibold text-slate-200">{mine ? "You" : c.author}</span> · {timeAgo(c.createdAt)}
+                      <div className="mb-1 text-xs text-zinc-400">
+                        <span className="font-semibold text-zinc-200">{mine ? "You" : c.author}</span> · {timeAgo(c.createdAt)}
                       </div>
                       <div
                         className={`rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed ${
-                          mine
-                            ? "rounded-br-md bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-glow"
-                            : "rounded-bl-md border border-white/10 bg-white/[0.06] text-slate-200"
+ mine
+ ? "rounded-br-md  bg-ink-600  text-white shadow-glow"
+                            : "rounded-bl-md border border-white/10 bg-white/[0.06] text-zinc-200"
                         }`}
                       >
                         {c.text}
@@ -154,7 +154,7 @@ export default function DiscussionDetail() {
         <div className="border-t border-white/[0.06] p-4">
           <div className="mb-3 flex flex-wrap gap-1.5">
             {QUICK_REPLIES.map((q) => (
-              <button key={q} onClick={() => addComment(q)} disabled={sending} className="chip transition hover:border-violet-400/30 hover:text-white">
+              <button key={q} onClick={() => addComment(q)} disabled={sending} className="chip transition hover:border-accent/30 hover:text-white">
                 <Smile size={11} /> {q}
               </button>
             ))}

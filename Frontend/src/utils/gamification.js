@@ -118,14 +118,14 @@ export function computeBadges({
   readiness = 0,
 }) {
   return [
-    { id: "first", label: "First Upload", desc: "Share your first material", icon: Upload, earned: contributions >= 1, color: "from-cyan-400 to-blue-600" },
-    { id: "library", label: "Librarian", desc: "Upload 10 materials", icon: Library, earned: contributions >= 10, color: "from-violet-400 to-indigo-600" },
-    { id: "podium", label: "Podium", desc: "Reach the top 3", icon: Crown, earned: !!rank && rank <= 3, color: "from-amber-300 to-orange-600" },
-    { id: "fire", label: "On Fire", desc: "3-day study streak", icon: Flame, earned: streak >= 3, color: "from-orange-400 to-rose-600" },
-    { id: "focus", label: "Deep Focus", desc: "100 focus minutes", icon: Timer, earned: focusMinutes >= 100, color: "from-emerald-400 to-teal-600" },
-    { id: "tracker", label: "Self Tracker", desc: "Log 3 exam results", icon: LineChart, earned: resultsCount >= 3, color: "from-sky-400 to-cyan-600" },
-    { id: "voice", label: "Community Voice", desc: "Start a discussion", icon: MessagesSquare, earned: posts >= 1, color: "from-pink-400 to-fuchsia-600" },
-    { id: "ready", label: "Exam Ready", desc: "Reach 80% readiness", icon: Rocket, earned: readiness >= 80, color: "from-lime-300 to-emerald-600" },
+    { id: "first", label: "First Upload", desc: "Share your first material", icon: Upload, earned: contributions >= 1, color: "bg-white/[0.06]" },
+    { id: "library", label: "Librarian", desc: "Upload 10 materials", icon: Library, earned: contributions >= 10, color: "bg-white/[0.06]" },
+    { id: "podium", label: "Podium", desc: "Reach the top 3", icon: Crown, earned: !!rank && rank <= 3, color: "bg-white/[0.06]" },
+    { id: "fire", label: "On Fire", desc: "3-day study streak", icon: Flame, earned: streak >= 3, color: "bg-white/[0.06]" },
+    { id: "focus", label: "Deep Focus", desc: "100 focus minutes", icon: Timer, earned: focusMinutes >= 100, color: "bg-white/[0.06]" },
+    { id: "tracker", label: "Self Tracker", desc: "Log 3 exam results", icon: LineChart, earned: resultsCount >= 3, color: "bg-white/[0.06]" },
+    { id: "voice", label: "Community Voice", desc: "Start a discussion", icon: MessagesSquare, earned: posts >= 1, color: "bg-white/[0.06]" },
+    { id: "ready", label: "Exam Ready", desc: "Reach 80% readiness", icon: Rocket, earned: readiness >= 80, color: "bg-white/[0.06]" },
   ];
 }
 

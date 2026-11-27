@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { User, Mail, Hash, Lock, ArrowRight, Loader2, CheckCircle2, AlertTriangle, Users } from "lucide-react";
+import { User, Mail, Hash, Lock, ArrowRight, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../components/ui/Toast.jsx";
 import AuthShell from "../components/AuthShell.jsx";
-import { branchFromRoll, batchFromRoll, batchLabel, useRules } from "../utils/rules.js";
+import { branchFromRoll, batchFromRoll, batchLabel, exampleRoll, rollAllowed, useRules } from "../utils/rules.js";
 
 function strength(p) {
   let s = 0;
@@ -18,15 +18,15 @@ function strength(p) {
 const STRENGTH = [
   { label: "Too short", color: "bg-rose-500" },
   { label: "Weak", color: "bg-rose-400" },
-  { label: "Okay", color: "bg-amber-400" },
+  { label: "Okay", color: "bg-accent" },
   { label: "Strong", color: "bg-emerald-400" },
-  { label: "Excellent", color: "bg-cyan-300" },
+  { label: "Excellent", color: "bg-accent" },
 ];
 
 function IconInput({ icon: Icon, ...props }) {
   return (
     <div className="relative">
-      <Icon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+      <Icon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
       <input {...props} className="input pl-11" />
     </div>
   );
@@ -45,10 +45,12 @@ export default function Signup() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Branch is read from the roll number; only allowed branches can join
-  const branch = branchFromRoll(rollNumber);
-  const batch = batchFromRoll(rollNumber);
-  const branchOk = !!branch && !!batch && rules.branches.includes(branch);
+  // Only roll numbers of the open class(es) can join; branch + batch come from the roll number
+  const roll = rollNumber.trim().toUpperCase();
+  const branch = branchFromRoll(roll);
+  const batch = batchFromRoll(roll);
+  const example = exampleRoll(rules.rollFormats[0]);
+  const branchOk = rollAllowed(roll, rules.rollFormats);
   const emailOk = !rules.emailDomain || email.trim().toLowerCase().endsWith(`@${rules.emailDomain}`);
 
   const onSubmit = async (e) => {
@@ -58,17 +60,17 @@ export default function Signup() {
       return;
     }
     if (!branchOk) {
-      setErr(`PrepTrack is currently open to ${rules.branches.join(", ")} students only.`);
+      setErr(`PrepTrack is currently open only to roll numbers like ${example}.`);
       return;
     }
     setErr("");
     setLoading(true);
 
-    const res = await register({ name, email, rollNumber, branch, password });
+    const res = await register({ name, email, rollNumber: roll, branch, password });
     setLoading(false);
 
     if (res.ok) {
-      toast({ title: "Account created 🎉", description: "Sign in to start your prep journey." });
+      toast({ title: "Account created", description: "Sign in to get started." });
       navigate("/login");
     } else setErr(res.error || "Signup failed");
   };
@@ -77,17 +79,11 @@ export default function Signup() {
 
   return (
     <AuthShell>
-      <h2 className="text-3xl font-bold text-white">Create your account</h2>
-      <p className="mt-1 text-slate-400">Join your batch on PrepTrack — it takes 30 seconds.</p>
-
-      <div className="mt-5 flex items-start gap-2 rounded-xl border border-violet-400/20 bg-violet-500/[0.07] px-3 py-2.5 text-xs text-violet-100/90">
-        <Users size={14} className="mt-0.5 shrink-0 text-violet-300" />
-        <span>
-          Now open to <b>{rules.branches.join(", ")}</b> students
-          {rules.emailDomain ? <> with a <b>@{rules.emailDomain}</b> email</> : null}. Student moderators are added by the
-          PrepTrack team.
-        </span>
-      </div>
+      <h2 className="text-2xl font-bold text-white sm:text-3xl">Create your account</h2>
+      <p className="mt-1 text-sm text-zinc-400">
+        Open to <span className="font-semibold text-white">{batchLabel(rules.branches[0], batchFromRoll(example))}</span>
+        {rules.emailDomain ? <> with a @{rules.emailDomain} email</> : null}.
+      </p>
 
       <form onSubmit={onSubmit} className="mt-5 space-y-4">
         <div>
@@ -106,21 +102,26 @@ export default function Signup() {
             required
           />
           {email.includes("@") && !emailOk && (
-            <p className="mt-1.5 text-xs text-amber-200">Must end with @{rules.emailDomain}</p>
+            <p className="mt-1.5 text-xs text-accent">Must end with @{rules.emailDomain}</p>
           )}
         </div>
 
         <div>
           <label className="label">Roll number</label>
-          <IconInput icon={Hash} value={rollNumber} onChange={(e) => setRollNumber(e.target.value)} placeholder="AM.SC.U4CSE23140" required />
+          <IconInput
+            icon={Hash}
+            value={rollNumber}
+            onChange={(e) => setRollNumber(e.target.value)}
+            placeholder={example}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            required
+          />
           {rollNumber.length >= 6 && (
-            <p className={`mt-1.5 flex items-center gap-1.5 text-xs ${branchOk ? "text-emerald-300" : "text-amber-200"}`}>
+            <p className={`mt-1.5 flex items-center gap-1.5 text-xs ${branchOk ? "text-emerald-400" : "text-rose-300"}`}>
               {branchOk ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
-              {branchOk
-                ? `Detected: ${batchLabel(branch, batch)} — you'll only see your batch`
-                : branch
-                ? `${branch} isn't open yet — PrepTrack is ${rules.branches.join(", ")}-only for now.`
-                : "Enter your full roll number, e.g. AM.SC.U4CSE23140"}
+              {branchOk ? batchLabel(branch, batch) : `Must look like ${example}`}
             </p>
           )}
         </div>
@@ -135,7 +136,7 @@ export default function Signup() {
                   <div key={i} className={`h-1.5 rounded-full transition-colors ${i < s ? STRENGTH[s].color : "bg-white/10"}`} />
                 ))}
               </div>
-              <span className="w-16 text-right text-[11px] text-slate-400">{STRENGTH[s].label}</span>
+              <span className="w-16 text-right text-[11px] text-zinc-400">{STRENGTH[s].label}</span>
             </div>
           )}
         </div>
@@ -165,9 +166,9 @@ export default function Signup() {
           )}
         </button>
 
-        <div className="text-center text-sm text-slate-400">
+        <div className="text-center text-sm text-zinc-400">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-violet-300 hover:text-violet-200">
+          <Link to="/login" className="font-semibold text-accent hover:text-accent">
             Log in
           </Link>
         </div>

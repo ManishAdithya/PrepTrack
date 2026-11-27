@@ -13,9 +13,9 @@ import Modal from "../components/ui/Modal.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
 import { SkeletonGrid } from "../components/ui/Skeleton.jsx";
-import { container } from "../components/ui/motion.js";
+import { container, item } from "../components/ui/motion.js";
 import { celebrate } from "../utils/confetti.js";
-import { approvedByLabels, isNew, materialTypes, shortDate, statusStyles, typeOf } from "../utils/ui.js";
+import { isNew, materialTypes, shortDate, typeOf } from "../utils/ui.js";
 import { useRules } from "../utils/rules.js";
 
 const XP = { note: 10, ppt: 8, pyq: 15 };
@@ -204,46 +204,39 @@ export default function Resources() {
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <PageHeader
-        icon={BookOpen}
-        eyebrow={`${user?.branch || "General"} library`}
         title="Study Materials"
-        subtitle="Notes, slides and previous-year papers shared by your batch."
-        gradient="from-cyan-400 to-blue-600"
+        subtitle="Notes, slides and PYQs shared by your class."
         actions={
-          <button onClick={() => setShowUpload(true)} className="btn-primary">
-            <Upload size={16} /> Upload & earn XP
+          <button onClick={() => setShowUpload(true)} className="btn-primary w-full sm:w-auto">
+            <Upload size={16} /> Upload
           </button>
         }
       />
 
       {/* Controls */}
-      <Card className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center" spotlight={false}>
+      <motion.div variants={item} className="space-y-3 lg:flex lg:items-center lg:gap-3 lg:space-y-0">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by title or uploader…"
-            className="input !border-transparent !bg-transparent pl-10 focus:!ring-0"
-          />
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search title or uploader" className="input pl-10" />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
           <Segmented
             value={filter}
             onChange={setFilter}
             size="sm"
+            className="min-w-0"
             options={[
-              { value: "all", label: "All", icon: Layers, count: counts.all },
-              ...Object.entries(materialTypes).map(([value, t]) => ({ value, label: t.label, icon: t.icon, count: counts[value] })),
+              { value: "all", label: "All", count: counts.all },
+              ...Object.entries(materialTypes).map(([value, t]) => ({ value, label: t.label, count: counts[value] })),
             ]}
           />
-          <Segmented value={sort} onChange={setSort} size="sm" options={[{ value: "new", label: "Newest" }, { value: "az", label: "A–Z" }]} />
+          <Segmented value={sort} onChange={setSort} size="sm" className="shrink-0" options={[{ value: "new", label: "New" }, { value: "az", label: "A–Z" }]} />
         </div>
-      </Card>
+      </motion.div>
 
       {/* Materials */}
       {loading ? (
-        <SkeletonGrid count={6} className="h-48" />
+        <SkeletonGrid count={4} className="h-20" />
       ) : error ? (
         <EmptyState icon={BookOpen} title="Couldn't load materials" text={error} />
       ) : visible.length === 0 ? (
@@ -258,97 +251,74 @@ export default function Resources() {
           }
         />
       ) : (
-        <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <AnimatePresence mode="popLayout">
+        <Card variants={null} className="p-0">
+          <ul className="divide-y divide-white/[0.06]">
             {visible.map((m) => {
               const t = typeOf(m.type);
-              const st = statusStyles[m.status];
+              const mine = m.uploadedBy === user?.name;
+              const toGo = Math.max(0, rules.approveUpvotes - (m.upvoteCount || 0));
               return (
-                <motion.div
-                  key={m._id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.94 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                  whileHover={{ y: -5 }}
-                >
-                  <Card className="flex h-full flex-col p-5" glow={t.glow} variants={null}>
-                    {isNew(m.releaseDate) && (
-                      <span className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-glow">
-                        NEW
-                      </span>
-                    )}
-                    <div className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${t.gradient} shadow-lg`}>
-                      <t.icon size={22} className="text-white" />
-                    </div>
-                    <div className="mt-4 line-clamp-2 font-display text-lg font-semibold leading-snug text-white">{m.title}</div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className={`chip ${t.chip}`}>{t.label}</span>
-                      {m.status === "approved" && approvedByLabels[m.approvedBy] ? (
-                        <span className={`chip ${st.chip}`}>
-                          <ShieldCheck size={11} /> {approvedByLabels[m.approvedBy]}
-                        </span>
-                      ) : (
-                        st && <span className={`chip ${st.chip}`}>{st.label}</span>
-                      )}
-                    </div>
-                    {m.status === "pending" && (
-                      <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
-                        <Hourglass size={11} />
-                        {Math.max(0, rules.approveUpvotes - (m.upvoteCount || 0))} more upvote
-                        {rules.approveUpvotes - (m.upvoteCount || 0) === 1 ? "" : "s"} to go live
-                      </div>
-                    )}
-                    <div className="mt-auto flex items-center gap-3 pt-5">
-                      <Avatar name={m.uploadedBy || "Anonymous"} size={30} />
-                      <div className="min-w-0 flex-1 text-xs leading-tight">
-                        <div className="truncate font-medium text-slate-200">{m.uploadedBy || "Anonymous"}</div>
-                        <div className="text-slate-500">Released {shortDate(m.releaseDate)}</div>
-                      </div>
+                <li key={m._id} className="p-4 sm:px-5">
+                  <div className="flex gap-3">
+                    <t.icon size={18} className="mt-0.5 shrink-0 text-zinc-500" />
+                    <div className="min-w-0 flex-1">
                       <a
                         href={m.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-ghost !px-3 !py-2 text-xs"
+                        className="line-clamp-2 text-[15px] font-semibold leading-snug text-white hover:text-accent"
                       >
-                        Open <ArrowUpRight size={14} />
+                        {m.title}
                       </a>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-500">
+                        <span>{t.label}</span>·<span className="truncate">{m.uploadedBy || "Anonymous"}</span>·
+                        <span>{shortDate(m.releaseDate)}</span>
+                        {isNew(m.releaseDate) && <span className="font-bold text-accent">NEW</span>}
+                      </div>
+                      {m.status === "pending" && (
+                        <div className="mt-1 flex items-center gap-1 text-xs text-zinc-400">
+                          <Hourglass size={11} /> Pending · {toGo} more upvote{toGo === 1 ? "" : "s"} to go live
+                        </div>
+                      )}
+                      {m.status === "revision" && <div className="mt-1 text-xs text-rose-300">Needs revision</div>}
                     </div>
-                    <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3">
-                      {m.uploadedBy === user?.name ? (
-                        <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <ThumbsUp size={13} /> {m.upvoteCount || 0} upvotes · your upload
-                        </span>
-                      ) : (
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-1 pl-[30px]">
+                    {mine ? (
+                      <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                        <ThumbsUp size={13} /> {m.upvoteCount || 0} · your upload
+                      </span>
+                    ) : (
+                      <>
+                        <button
                           onClick={() => toggleUpvote(m)}
-                          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
-                            m.upvoted ? "bg-violet-500/20 text-violet-100" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                          className={`flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition ${
+                            m.upvoted ? "bg-accent text-black" : "border border-white/10 text-zinc-300 hover:border-white/25"
                           }`}
                           aria-pressed={!!m.upvoted}
                         >
-                          <ThumbsUp size={14} className={m.upvoted ? "fill-violet-300/40" : ""} /> {m.upvoteCount || 0}
+                          <ThumbsUp size={14} /> {m.upvoteCount || 0}
                           <span className="font-normal">{m.upvoted ? "Upvoted" : "Helpful"}</span>
-                        </motion.button>
-                      )}
-                      {m.uploadedBy !== user?.name && (
+                        </button>
                         <button
                           onClick={() => !m.reported && setReportTarget(m)}
                           disabled={m.reported}
-                          className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-200 disabled:pointer-events-none"
+                          className="flex h-9 items-center gap-1 rounded-lg px-2.5 text-xs text-zinc-500 transition hover:text-rose-300 disabled:pointer-events-none"
                         >
                           <Flag size={12} /> {m.reported ? "Reported" : "Report"}
                         </button>
-                      )}
-                    </div>
-                  </Card>
-                </motion.div>
+                      </>
+                    )}
+                    <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost ml-auto !min-h-[36px] !px-3 !py-1.5 text-xs">
+                      Open <ArrowUpRight size={14} />
+                    </a>
+                  </div>
+                </li>
               );
             })}
-          </AnimatePresence>
-        </motion.div>
+          </ul>
+        </Card>
       )}
 
       {/* Upload modal */}
@@ -356,10 +326,10 @@ export default function Resources() {
         <form onSubmit={handleUpload} className="space-y-5">
           <div
             className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs ${
-              trusted ? "border-emerald-400/25 bg-emerald-400/[0.07] text-emerald-100" : "border-white/10 bg-white/[0.03] text-slate-300"
+ trusted ? "border-emerald-400/25 bg-emerald-400/[0.07] text-emerald-100" : "border-white/10 bg-white/[0.03] text-zinc-300"
             }`}
           >
-            <ShieldCheck size={14} className={`mt-0.5 shrink-0 ${trusted ? "text-emerald-300" : "text-slate-400"}`} />
+            <ShieldCheck size={14} className={`mt-0.5 shrink-0 ${trusted ? "text-emerald-300" : "text-zinc-400"}`} />
             {trusted ? (
               <span>You're a <b>trusted uploader</b> — your uploads go live instantly and earn XP right away.</span>
             ) : (
@@ -378,24 +348,24 @@ export default function Resources() {
             onDrop={onDrop}
             onClick={() => fileRef.current?.click()}
             className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition ${
-              dragging
-                ? "scale-[1.01] border-violet-400 bg-violet-500/10"
+ dragging
+ ? "scale-[1.01] border-accent bg-accent/10"
                 : file
                 ? "border-emerald-400/40 bg-emerald-400/5"
-                : "border-white/15 hover:border-violet-400/50 hover:bg-white/[0.03]"
+                : "border-white/15 hover:border-accent/50 hover:bg-white/[0.03]"
             }`}
           >
             {file ? (
               <>
                 <FileCheck2 size={30} className="text-emerald-300" />
                 <div className="mt-2 max-w-full truncate font-semibold text-white">{file.name}</div>
-                <div className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB · click to change</div>
+                <div className="text-xs text-zinc-400">{(file.size / 1024 / 1024).toFixed(2)} MB · click to change</div>
               </>
             ) : (
               <>
-                <UploadCloud size={30} className={dragging ? "text-violet-300" : "text-slate-400"} />
+                <UploadCloud size={30} className={dragging ? "text-accent" : "text-zinc-400"} />
                 <div className="mt-2 font-semibold text-white">Drop your file here</div>
-                <div className="text-xs text-slate-400">or click to browse · PDF, PPT, images</div>
+                <div className="text-xs text-zinc-400">or click to browse · PDF, PPT, images</div>
               </>
             )}
             <input
@@ -424,14 +394,14 @@ export default function Resources() {
                   type="button"
                   onClick={() => setType(value)}
                   className={`rounded-2xl border p-3 text-left transition ${
-                    type === value ? "border-violet-400/60 bg-violet-500/15 shadow-glow" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+ type === value ? "border-accent/60 bg-accent/15 shadow-glow" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
                   }`}
                 >
-                  <div className={`grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br ${t.gradient}`}>
+                  <div className={`grid h-8 w-8 place-items-center rounded-lg ${t.gradient}`}>
                     <t.icon size={16} className="text-white" />
                   </div>
                   <div className="mt-2 text-sm font-semibold text-white">{t.label}</div>
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-200">
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-accent">
                     <Sparkles size={10} /> +{XP[value]} XP
                   </div>
                 </button>
@@ -442,7 +412,7 @@ export default function Resources() {
           <div>
             <label className="label">Exam date (optional)</label>
             <input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} className="input" />
-            <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-400">
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-zinc-400">
               <CalendarClock size={13} className="mt-0.5 shrink-0" />
               {type === "pyq" ? "PYQs unlock for students 2 days before the exam." : "Notes and slides unlock 7 days before the exam."} Leave empty to release now.
             </p>
@@ -467,17 +437,17 @@ export default function Resources() {
         subtitle={`After ${rules.hideReports} reports it's hidden until a moderator reviews it.`}
         width="max-w-md"
       >
-        <div className="mb-4 truncate rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-slate-300">{reportTarget?.title}</div>
+        <div className="mb-4 truncate rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-zinc-300">{reportTarget?.title}</div>
         <div className="space-y-2">
           {REPORT_REASONS.map((r) => (
             <button
               key={r}
               onClick={() => setReportReason(r)}
               className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
-                reportReason === r ? "border-rose-400/40 bg-rose-500/10 text-white" : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]"
+ reportReason === r ? "border-rose-400/40 bg-rose-500/10 text-white" : "border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06]"
               }`}
             >
-              <span className={`h-3.5 w-3.5 rounded-full border-2 ${reportReason === r ? "border-rose-300 bg-rose-400" : "border-slate-500"}`} />
+              <span className={`h-3.5 w-3.5 rounded-full border-2 ${reportReason === r ? "border-rose-300 bg-rose-400" : "border-zinc-500"}`} />
               {r}
             </button>
           ))}

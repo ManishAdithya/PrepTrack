@@ -32,7 +32,7 @@ function Heatmap() {
     cells.push({ d, mins, future: d > today });
   }
   const level = (m) => (m === 0 ? 0 : m < 20 ? 1 : m < 50 ? 2 : m < 90 ? 3 : 4);
-  const colors = ["bg-white/[0.05]", "bg-violet-500/30", "bg-violet-500/55", "bg-fuchsia-500/75", "bg-fuchsia-400"];
+  const colors = ["bg-white/[0.05]", "bg-accent/30", "bg-accent/55", "bg-accent/75", "bg-accent"];
   const activeDays = cells.filter((c) => c.mins > 0).length;
 
   return (
@@ -49,7 +49,7 @@ function Heatmap() {
           />
         ))}
       </div>
-      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+      <div className="mt-3 flex items-center justify-between text-xs text-zinc-500">
         <span>{activeDays} active days in the last {weeks} weeks</span>
         <span className="flex items-center gap-1">
           Less {colors.map((c) => <span key={c} className={`h-2.5 w-2.5 rounded-sm ${c}`} />)} More
@@ -147,7 +147,7 @@ export default function Profile() {
   const field = (key, label, placeholder = "", type = "text", readOnly = false) => (
     <div>
       <label className="label flex items-center gap-1">
-        {label} {readOnly && <Lock size={10} className="text-slate-500" />}
+        {label} {readOnly && <Lock size={10} className="text-zinc-500" />}
       </label>
       <input
         type={type}
@@ -165,22 +165,17 @@ export default function Profile() {
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       {/* Banner */}
       <Card className="p-0" spotlight={false}>
-        <div className="relative h-36 overflow-hidden rounded-t-3xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 sm:h-44">
-          <div className="bg-grid absolute inset-0 opacity-30" />
-          <div className="absolute -right-10 -top-16 h-56 w-56 animate-float rounded-full bg-white/20 blur-3xl" />
-          <div className="absolute bottom-0 left-1/4 h-32 w-32 rounded-full bg-cyan-300/30 blur-2xl" />
-        </div>
-        <div className="flex flex-col gap-4 px-6 pb-6 sm:flex-row sm:items-end">
-          <motion.div variants={pop} className="-mt-14 rounded-full p-1.5 sm:-mt-16" style={{ background: "conic-gradient(from 180deg, #a78bfa, #f0abfc, #22d3ee, #a78bfa)" }}>
-            <Avatar name={profile.name} size={112} className="ring-4 ring-ink-900" />
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:p-6">
+          <motion.div variants={pop}>
+            <Avatar name={profile.name} size={72} className="ring-2 ring-accent ring-offset-4 ring-offset-ink-800" />
           </motion.div>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-white">{profile.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400">
+            <h1 className="text-2xl font-bold text-white sm:text-3xl">{profile.name}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-400">
               <span className="flex items-center gap-1"><Hash size={13} />{profile.rollNumber || "No roll number"}</span>
               <span className="chip">{profile.branch || "—"}</span>
               {profile.year && <span className="chip"><GraduationCap size={12} />{profile.year}</span>}
-              <span className="chip !border-amber-300/30 !bg-amber-300/10 !text-amber-100">
+              <span className="chip !border-accent/30 !bg-accent/10 !text-accent">
                 <Sparkles size={12} /> Lv {game.level.level} · {game.level.title}
               </span>
               {game.xp >= rules.trustedXp && (
@@ -196,20 +191,20 @@ export default function Profile() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { icon: Sparkles, label: "Total XP", value: game.xp, g: "from-amber-300 to-orange-500" },
-          { icon: Crown, label: "Leaderboard rank", value: game.rank || 0, prefix: "#", g: "from-violet-500 to-fuchsia-600" },
-          { icon: Flame, label: "Best streak", value: game.streak.best, suffix: " days", g: "from-orange-400 to-rose-600" },
-          { icon: Timer, label: "Focus time", value: focus.stats.totalMinutes, suffix: " min", g: "from-cyan-400 to-blue-600" },
+          { icon: Sparkles, label: "Total XP", value: game.xp, g: "bg-white/[0.06]" },
+          { icon: Crown, label: "Leaderboard rank", value: game.rank || 0, prefix: "#", g: "bg-white/[0.06]" },
+          { icon: Flame, label: "Best streak", value: game.streak.best, suffix: " days", g: "bg-white/[0.06]" },
+          { icon: Timer, label: "Focus time", value: focus.stats.totalMinutes, suffix: " min", g: "bg-white/[0.06]" },
         ].map((s) => (
           <Card key={s.label} className="p-5">
-            <div className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${s.g} shadow-lg`}>
+            <div className={`grid h-10 w-10 place-items-center rounded-xl ${s.g} shadow-lg`}>
               <s.icon size={18} className="text-white" />
             </div>
             <div className="mt-3 font-display text-2xl font-bold text-white">
               {s.prefix}
               {s.value ? <AnimatedNumber value={s.value} suffix={s.suffix} /> : "—"}
             </div>
-            <div className="text-xs text-slate-400">{s.label}</div>
+            <div className="text-xs text-zinc-400">{s.label}</div>
           </Card>
         ))}
       </div>
@@ -220,7 +215,7 @@ export default function Profile() {
           <Card className="p-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="section-title">
-                <Award size={18} className="text-amber-300" /> Achievements
+                <Award size={18} className="text-accent" /> Achievements
               </h2>
               <span className="chip">{earned}/{badges.length} unlocked</span>
             </div>
@@ -233,20 +228,20 @@ export default function Profile() {
                   transition={{ delay: 0.15 + i * 0.06, type: "spring", stiffness: 260, damping: 16 }}
                   whileHover={b.earned ? { y: -4, rotate: 3 } : {}}
                   className={`group relative flex flex-col items-center rounded-2xl border p-4 text-center ${
-                    b.earned ? "border-white/10 bg-white/[0.04]" : "border-dashed border-white/[0.08]"
+ b.earned ? "border-white/10 bg-white/[0.04]" : "border-dashed border-white/[0.08]"
                   }`}
                   title={b.desc}
                 >
                   <div
                     className={`relative grid h-14 w-14 place-items-center rounded-2xl ${
-                      b.earned ? `bg-gradient-to-br ${b.color} shadow-lg` : "bg-white/[0.04]"
+ b.earned ? ` ${b.color} shadow-lg` : "bg-white/[0.04]"
                     }`}
                   >
-                    {b.earned ? <b.icon size={24} className="text-white" /> : <Lock size={20} className="text-slate-600" />}
-                    {b.earned && <div className={`absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br ${b.color} opacity-50 blur-lg`} />}
+                    {b.earned ? <b.icon size={24} className="text-white" /> : <Lock size={20} className="text-zinc-600" />}
+                    {b.earned && <div className={`absolute inset-0 -z-10 rounded-2xl ${b.color} opacity-50 blur-lg`} />}
                   </div>
-                  <div className={`mt-3 text-sm font-semibold ${b.earned ? "text-white" : "text-slate-500"}`}>{b.label}</div>
-                  <div className="mt-0.5 text-[11px] leading-tight text-slate-500">{b.desc}</div>
+                  <div className={`mt-3 text-sm font-semibold ${b.earned ? "text-white" : "text-zinc-500"}`}>{b.label}</div>
+                  <div className="mt-0.5 text-[11px] leading-tight text-zinc-500">{b.desc}</div>
                 </motion.div>
               ))}
             </div>
@@ -255,7 +250,7 @@ export default function Profile() {
           {/* Heatmap */}
           <Card className="p-6">
             <h2 className="section-title mb-4">
-              <CalendarDays size={18} className="text-fuchsia-300" /> Study activity
+              <CalendarDays size={18} className="text-accent" /> Study activity
             </h2>
             <Heatmap />
           </Card>
@@ -294,18 +289,18 @@ export default function Profile() {
 
           <div className="mt-6 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
             <div className="mb-2 flex justify-between text-sm">
-              <span className="text-slate-400">Overall progress</span>
+              <span className="text-zinc-400">Overall progress</span>
               <span className="font-semibold text-white">{extra.readiness}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300"
+                className="h-full rounded-full bg-emerald-400 "
                 initial={{ width: 0 }}
                 animate={{ width: `${extra.readiness}%` }}
                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               />
             </div>
-            <div className="mt-1.5 text-xs text-slate-500">of {profile.branch || "your"} goals completed</div>
+            <div className="mt-1.5 text-xs text-zinc-500">of {profile.branch || "your"} goals completed</div>
           </div>
 
           <div className="mt-6 flex justify-end gap-2">

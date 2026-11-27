@@ -10,7 +10,7 @@ import EmptyState from "../../components/ui/EmptyState.jsx";
 import { SkeletonGrid } from "../../components/ui/Skeleton.jsx";
 import { container } from "../../components/ui/motion.js";
 
-const gradients = ["from-violet-500 to-fuchsia-600", "from-cyan-400 to-blue-600", "from-emerald-400 to-teal-600", "from-amber-300 to-orange-600", "from-pink-500 to-rose-600"];
+const gradients = ["bg-white/[0.06]"];
 
 export default function AdminBranches() {
   const toast = useToast();
@@ -68,7 +68,7 @@ export default function AdminBranches() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader icon={GitBranch} eyebrow="Structure" title="Academic Branches" subtitle="Branches decide which materials and announcements students see." gradient="from-emerald-400 to-teal-600" />
+      <PageHeader icon={GitBranch} eyebrow="Structure" title="Academic Branches" subtitle="Branches decide which materials and announcements students see." />
 
       <Card className="p-5" spotlight={false}>
         <form onSubmit={handleAddBranch} className="grid grid-cols-1 gap-3 md:grid-cols-[1fr,180px,auto]">
@@ -81,7 +81,7 @@ export default function AdminBranches() {
       </Card>
 
       <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
         <input placeholder="Search for a branch…" value={search} onChange={(e) => setSearch(e.target.value)} className="input pl-10" />
       </div>
 
@@ -105,15 +105,15 @@ export default function AdminBranches() {
                 className="glass group p-5"
               >
                 <div className="flex items-start justify-between">
-                  <div className={`grid h-14 min-w-14 place-items-center rounded-2xl bg-gradient-to-br px-2 ${gradients[i % gradients.length]} font-mono text-sm font-bold text-white shadow-lg`}>
+                  <div className={`grid h-14 min-w-14 place-items-center rounded-2xl px-2 ${gradients[i % gradients.length]} font-mono text-sm font-bold text-white shadow-lg`}>
                     {b.branchCode}
                   </div>
-                  <button onClick={() => setConfirm(b)} className="rounded-lg p-2 text-slate-500 opacity-0 transition hover:bg-rose-500/10 hover:text-rose-300 group-hover:opacity-100 focus:opacity-100" aria-label={`Delete ${b.branchName}`}>
+                  <button onClick={() => setConfirm(b)} className="rounded-lg p-2 text-zinc-500 opacity-0 transition hover:bg-rose-500/10 hover:text-rose-300 group-hover:opacity-100 focus:opacity-100" aria-label={`Delete ${b.branchName}`}>
                     <Trash2 size={16} />
                   </button>
                 </div>
                 <div className="mt-4 font-display text-lg font-semibold text-white">{b.branchName}</div>
-                <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
                   <CalendarDays size={12} /> Created {new Date(b.createdAt || b.created).toLocaleDateString()}
                 </div>
               </motion.div>

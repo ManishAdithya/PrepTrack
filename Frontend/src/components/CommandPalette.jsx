@@ -101,21 +101,21 @@ export default function CommandPalette({ open, setOpen, links = [], actions = []
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
           >
             <div className="flex items-center gap-3 border-b border-white/10 px-4">
-              <Search size={18} className="text-slate-400" />
+              <Search size={18} className="text-zinc-400" />
               <input
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={searchMaterials ? "Search notes, PYQs, pages…" : "Search pages and actions…"}
-                className="h-14 flex-1 bg-transparent text-base text-white placeholder:text-slate-500 outline-none"
+                className="h-14 flex-1 bg-transparent text-base text-white placeholder:text-zinc-500 outline-none"
               />
-              <kbd className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-slate-400">ESC</kbd>
+              <kbd className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-400">ESC</kbd>
             </div>
 
             <div className="max-h-[50vh] overflow-y-auto p-2">
               {results.length === 0 && (
-                <div className="px-4 py-10 text-center text-sm text-slate-400">No matches for “{query}”.</div>
+                <div className="px-4 py-10 text-center text-sm text-zinc-400">No matches for “{query}”.</div>
               )}
               {results.map((r, i) => {
                 const header = r.group !== lastGroup ? r.group : null;
@@ -124,7 +124,7 @@ export default function CommandPalette({ open, setOpen, links = [], actions = []
                 return (
                   <React.Fragment key={`${r.group}-${r.label}-${i}`}>
                     {header && (
-                      <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                      <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
                         {header}
                       </div>
                     )}
@@ -132,19 +132,19 @@ export default function CommandPalette({ open, setOpen, links = [], actions = []
                       onMouseEnter={() => setActive(i)}
                       onClick={() => runAt(i)}
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                        active === i ? "bg-violet-500/15 text-white" : "text-slate-300"
+ active === i ? "bg-accent/15 text-white" : "text-zinc-300"
                       }`}
                     >
                       <span
                         className={`grid h-8 w-8 place-items-center rounded-lg ${
-                          active === i ? "bg-violet-500/25 text-violet-200" : "bg-white/5 text-slate-400"
+ active === i ? "bg-accent/25 text-accent" : "bg-white/5 text-zinc-400"
                         }`}
                       >
                         <Icon size={16} />
                       </span>
                       <span className="flex-1 truncate">{r.label}</span>
-                      {r.hint && <span className="text-xs text-slate-500">{r.hint}</span>}
-                      {active === i && <CornerDownLeft size={14} className="text-slate-400" />}
+                      {r.hint && <span className="text-xs text-zinc-500">{r.hint}</span>}
+                      {active === i && <CornerDownLeft size={14} className="text-zinc-400" />}
                     </button>
                   </React.Fragment>
                 );

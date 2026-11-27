@@ -7,8 +7,8 @@ export default function ProgressRing({
   size = 180,
   stroke = 14,
   label = "",
-  from = "#a78bfa",
-  to = "#22d3ee",
+  from = "#FFD60A",
+  to = "#FFD60A",
   children,
 }) {
   const id = useId();
@@ -56,7 +56,7 @@ export default function ProgressRing({
               suffix="%"
               className="font-display text-4xl font-bold text-white"
             />
-            {label && <div className="mt-0.5 text-xs text-slate-400">{label}</div>}
+            {label && <div className="mt-0.5 text-xs text-zinc-400">{label}</div>}
           </div>
         )}
       </div>

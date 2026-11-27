@@ -87,7 +87,7 @@ export default function AdminAnnouncements() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader icon={Megaphone} eyebrow="Broadcast" title="Announcements" subtitle="Share news, deadlines and exam updates with students." gradient="from-violet-500 to-fuchsia-600" />
+      <PageHeader icon={Megaphone} eyebrow="Broadcast" title="Announcements" subtitle="Share news, deadlines and exam updates with students." />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {/* Composer */}
@@ -100,7 +100,7 @@ export default function AdminAnnouncements() {
             onChange={(e) => setMessage(e.target.value)}
             maxLength={500}
           />
-          <div className="mt-1 text-right text-[11px] text-slate-500">{message.length}/500</div>
+          <div className="mt-1 text-right text-[11px] text-zinc-500">{message.length}/500</div>
 
           <div className="mt-3">
             <label className="label flex items-center gap-1.5"><Users size={12} /> Audience</label>
@@ -111,7 +111,7 @@ export default function AdminAnnouncements() {
                   type="button"
                   onClick={() => setAudience(a.value)}
                   className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-                    audience === a.value ? "border-violet-400/60 bg-violet-500/20 text-white shadow-glow" : "border-white/10 bg-white/[0.04] text-slate-400 hover:text-white"
+ audience === a.value ? "border-accent/60 bg-accent/20 text-white shadow-glow" : "border-white/10 bg-white/[0.04] text-zinc-400 hover:text-white"
                   }`}
                 >
                   {a.label}
@@ -122,11 +122,11 @@ export default function AdminAnnouncements() {
 
           <button type="button" onClick={() => setPriority((p) => !p)} className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 text-left transition hover:bg-white/[0.05]">
             <span className={`relative h-6 w-11 rounded-full border transition ${priority ? "border-rose-400/40 bg-rose-500/40" : "border-white/10 bg-white/10"}`}>
-              <motion.span layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className={`absolute top-0.5 h-[18px] w-[18px] rounded-full ${priority ? "right-0.5 bg-rose-200" : "left-0.5 bg-slate-300"}`} />
+              <motion.span layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className={`absolute top-0.5 h-[18px] w-[18px] rounded-full ${priority ? "right-0.5 bg-rose-200" : "left-0.5 bg-zinc-300"}`} />
             </span>
             <span>
               <span className="block text-sm font-semibold text-white">High priority</span>
-              <span className="text-xs text-slate-400">Highlighted in red on every student's dashboard</span>
+              <span className="text-xs text-zinc-400">Highlighted in red on every student's dashboard</span>
             </span>
           </button>
 
@@ -134,12 +134,12 @@ export default function AdminAnnouncements() {
           <div className="mt-5">
             <div className="label flex items-center gap-1.5"><Eye size={12} /> Student preview</div>
             <div className={`relative overflow-hidden rounded-2xl border p-4 ${priority ? "border-rose-400/25 bg-rose-500/[0.08]" : "border-white/[0.06] bg-white/[0.03]"}`}>
-              {priority && <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-400 to-fuchsia-500" />}
-              <div className="flex items-start gap-2 text-sm text-slate-200">
+              {priority && <div className="absolute inset-y-0 left-0 w-1 bg-rose-400 " />}
+              <div className="flex items-start gap-2 text-sm text-zinc-200">
                 {priority && <Sparkles size={16} className="mt-0.5 shrink-0 text-rose-300" />}
-                {message || <span className="text-slate-500">Your message will appear here…</span>}
+                {message || <span className="text-zinc-500">Your message will appear here…</span>}
               </div>
-              <div className="mt-2 flex items-center gap-2 text-xs text-slate-500"><Clock size={12} /> just now · {audienceLabel(audience)}</div>
+              <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500"><Clock size={12} /> just now · {audienceLabel(audience)}</div>
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export default function AdminAnnouncements() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="section-title">Published <span className="chip">{announcements.length}</span></h2>
             <div className="relative w-full sm:w-60">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input placeholder="Search announcements…" value={search} onChange={(e) => setSearch(e.target.value)} className="input !py-2 pl-9" />
             </div>
           </div>
@@ -180,9 +180,9 @@ export default function AdminAnnouncements() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     className={`relative overflow-hidden rounded-2xl border p-4 ${x.priority ? "border-rose-400/25 bg-rose-500/[0.08]" : "border-white/[0.06] bg-white/[0.03]"}`}
                   >
-                    {x.priority && <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-400 to-fuchsia-500" />}
-                    <div className="text-sm text-slate-200">{x.message}</div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    {x.priority && <div className="absolute inset-y-0 left-0 w-1 bg-rose-400 " />}
+                    <div className="text-sm text-zinc-200">{x.message}</div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
                       <Clock size={12} /> {timeAgo(x.createdAt)}
                       <span className="chip">{audienceLabel(x.audience)}</span>
                       {x.priority && <span className="chip !border-rose-400/30 !bg-rose-500/10 !text-rose-200">High priority</span>}

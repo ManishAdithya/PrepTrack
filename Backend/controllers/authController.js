@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { addSecurityLog } from "./securityLogController.js";
-import { getRules, branchFromRoll, batchFromRoll } from "../config/community.js";
+import { getRules, branchFromRoll, batchFromRoll, rollAllowed } from "../config/community.js";
 import { BLOB_FLOW } from "./uploadController.js";
 
 // =============================
@@ -33,20 +33,17 @@ export const register = async (req, res) => {
       return res.status(403).json({ message: `Please use your college email (@${rules.emailDomain}).` });
     }
 
-    // Branch comes from the roll number, so nobody can join another branch
-    const branch = branchFromRoll(rollNumber);
-    if (!branch) {
-      return res.status(400).json({ message: "That roll number doesn't look right (e.g. AM.SC.U4CSE23140)." });
-    }
-    if (!rules.branches.includes(branch)) {
-      return res.status(403).json({ message: `PrepTrack is currently open to ${rules.branches.join(", ")} students only.` });
+    // Only roll numbers of the classes PrepTrack is open to (see ALLOWED_ROLL_FORMATS)
+    if (!rollAllowed(rollNumber)) {
+      const example = rules.rollFormats[0]?.replace(/#/g, "0").replace(/0{3}$/, "001") || "";
+      return res.status(403).json({
+        message: `PrepTrack is currently open only to roll numbers like ${example}.`,
+      });
     }
 
-    // Joining batch from the roll number; students only ever see their own batch
+    // Branch and joining batch come from the roll number; students only ever see their own class
+    const branch = branchFromRoll(rollNumber);
     const batch = batchFromRoll(rollNumber);
-    if (!batch) {
-      return res.status(400).json({ message: "That roll number doesn't look right (e.g. AM.SC.U4CSE23140)." });
-    }
 
     const existing = await User.findOne({ email });
     if (existing) {

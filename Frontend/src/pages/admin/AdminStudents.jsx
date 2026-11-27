@@ -103,25 +103,25 @@ export default function AdminStudents() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader icon={Users} eyebrow="People" title="Students & CRs" subtitle="See how every student is preparing, and pick up to 2 CRs for your batch. You only see your own batch." gradient="from-cyan-400 to-blue-600" />
+      <PageHeader icon={Users} eyebrow="People" title="Students & CRs" subtitle="See how every student is preparing, and pick up to 2 CRs for your batch. You only see your own batch." />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="p-5">
-          <div className="text-sm text-slate-400">Students</div>
+          <div className="text-sm text-zinc-400">Students</div>
           <div className="mt-1 font-display text-3xl font-bold text-white"><AnimatedNumber value={learners.length} /></div>
-          <div className="text-xs text-slate-500">{students.length - learners.length} CRs</div>
+          <div className="text-xs text-zinc-500">{students.length - learners.length} CRs</div>
         </Card>
         <Card className="p-5">
-          <div className="text-sm text-slate-400">Average readiness</div>
+          <div className="text-sm text-zinc-400">Average readiness</div>
           <div className="mt-1 font-display text-3xl font-bold text-white"><AnimatedNumber value={avg} suffix="%" /></div>
         </Card>
         <Card className="col-span-2 p-5">
-          <div className="text-sm text-slate-400">Confidence split</div>
+          <div className="text-sm text-zinc-400">Confidence split</div>
           <div className="mt-3 flex h-3 overflow-hidden rounded-full bg-white/10">
             {["High", "Medium", "Low"].map((c, i) => (
               <motion.div
                 key={c}
-                className={`h-full bg-gradient-to-r ${confidenceOf(c).bar}`}
+                className={`h-full ${confidenceOf(c).bar}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${learners.length ? (byConf[i] / learners.length) * 100 : 0}%` }}
                 transition={{ duration: 1, delay: i * 0.1 }}
@@ -143,7 +143,7 @@ export default function AdminStudents() {
         <Card className="p-3" spotlight={false}>
           <div className="mb-2 flex gap-2 p-1">
             <div className="relative flex-1">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search students…" className="input !py-2 pl-9" />
             </div>
             <Segmented size="sm" value={sort} onChange={setSort} options={[{ value: "name", label: "A–Z" }, { value: "progress", label: "Top" }]} />
@@ -157,22 +157,22 @@ export default function AdminStudents() {
                   key={s._id}
                   layout
                   onClick={() => setSelected(s)}
-                  className={`w-full rounded-2xl px-3 py-3 text-left transition ${active ? "border border-cyan-400/30 bg-cyan-500/10" : "border border-transparent hover:bg-white/[0.04]"}`}
+                  className={`w-full rounded-2xl px-3 py-3 text-left transition ${active ? "border border-accent/30 bg-accent/10" : "border border-transparent hover:bg-white/[0.04]"}`}
                 >
                   <div className="flex items-center gap-3">
                     <Avatar name={s.name} size={36} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 truncate font-semibold text-white">
                         {s.name}
-                        {s.role === "admin" && <ShieldCheck size={13} className="shrink-0 text-cyan-300" aria-label="CR" />}
+                        {s.role === "admin" && <ShieldCheck size={13} className="shrink-0 text-accent" aria-label="CR" />}
                       </div>
-                      <div className="text-xs text-slate-500">{s.branch || "N/A"}</div>
+                      <div className="text-xs text-zinc-500">{s.branch || "N/A"}</div>
                     </div>
                     <div className="font-display font-bold text-white">{p.progressPercent}%</div>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-400"
+                      className="h-full rounded-full bg-accent "
                       initial={{ width: 0 }}
                       animate={{ width: `${p.progressPercent}%` }}
                       transition={{ duration: 0.9 }}
@@ -181,7 +181,7 @@ export default function AdminStudents() {
                 </motion.button>
               );
             })}
-            {list.length === 0 && <p className="p-4 text-center text-sm text-slate-500">No students match.</p>}
+            {list.length === 0 && <p className="p-4 text-center text-sm text-zinc-500">No students match.</p>}
           </div>
         </Card>
 
@@ -196,7 +196,7 @@ export default function AdminStudents() {
                     <div className="flex flex-wrap items-center gap-2 font-display text-2xl font-bold text-white">
                       {selected.name}
                       {selected.role === "admin" && (
-                        <span className="chip !border-cyan-400/30 !bg-cyan-400/10 !text-cyan-200">
+                        <span className="chip !border-accent/30 !bg-accent/10 !text-accent">
                           <ShieldCheck size={12} /> CR
                         </span>
                       )}
@@ -222,17 +222,17 @@ export default function AdminStudents() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-[260px,1fr]">
                 <div className="glass p-6 text-center">
-                  <div className="section-title mb-4 justify-center text-base"><Gauge size={16} className="text-cyan-300" /> Readiness</div>
-                  <ProgressRing value={sp.progressPercent} size={150} stroke={12} from="#22d3ee" to="#a78bfa" />
+                  <div className="section-title mb-4 justify-center text-base"><Gauge size={16} className="text-accent" /> Readiness</div>
+                  <ProgressRing value={sp.progressPercent} size={150} stroke={12} from="#FFD60A" to="#FFD60A" />
                   <span className={`chip mt-4 ${confidenceOf(sp.confidence).chip}`}>{sp.confidence} confidence</span>
                 </div>
                 <div className="glass p-6">
                   <div className="mb-3 flex items-center justify-between">
-                    <div className="section-title text-base"><LineChart size={16} className="text-violet-300" /> Exam results</div>
+                    <div className="section-title text-base"><LineChart size={16} className="text-accent" /> Exam results</div>
                     {results.length > 0 && <span className="chip">avg {avgResult}%</span>}
                   </div>
                   {results.length === 0 ? (
-                    <p className="py-10 text-center text-sm text-slate-500">No results uploaded yet.</p>
+                    <p className="py-10 text-center text-sm text-zinc-500">No results uploaded yet.</p>
                   ) : (
                     <>
                       <div className="h-40">
@@ -240,8 +240,8 @@ export default function AdminStudents() {
                           <AreaChart data={results.map((r) => ({ x: shortDate(r.uploadedAt), y: r.percentage, subject: r.subject }))} margin={{ left: -24, right: 6, top: 6 }}>
                             <defs>
                               <linearGradient id="stuFill" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
-                                <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                                <stop offset="0%" stopColor="#FFD60A" stopOpacity={0.5} />
+                                <stop offset="100%" stopColor="#FFD60A" stopOpacity={0} />
                               </linearGradient>
                             </defs>
                             <XAxis dataKey="x" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -255,7 +255,7 @@ export default function AdminStudents() {
                                 ) : null
                               }
                             />
-                            <Area type="monotone" dataKey="y" stroke="#22d3ee" strokeWidth={2.5} fill="url(#stuFill)" dot={{ r: 3, fill: "#22d3ee" }} />
+                            <Area type="monotone" dataKey="y" stroke="#FFD60A" strokeWidth={2.5} fill="url(#stuFill)" dot={{ r: 3, fill: "#FFD60A" }} />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>

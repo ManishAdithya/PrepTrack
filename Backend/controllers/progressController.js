@@ -1,36 +1,16 @@
 import Progress from "../models/Progress.js";
+import Result from "../models/Result.js";
 import { idsInScope } from "../utils/scope.js";
+import { computeReadiness } from "../utils/readiness.js";
+import { refreshReadiness } from "./resultController.js";
 
-// POST /api/progress/update → Students update their progress
+// POST /api/progress/update → recalculates readiness from the student's marks.
+// (Readiness can't be typed in by hand any more — it always comes from logged results.)
 export const updateProgress = async (req, res) => {
   try {
-    const { branch, progressPercent, confidence } = req.body;
-
-    // Determine confidence if not provided
-    const autoConfidence =
-      confidence ||
-      (progressPercent >= 80
-        ? "High"
-        : progressPercent >= 60
-        ? "Medium"
-        : "Low");
-
-    // Always use logged-in user's ID (from JWT)
-    const progress = await Progress.findOneAndUpdate(
-      { userId: req.user.id },
-      {
-        branch,
-        progressPercent,
-        confidence: autoConfidence,
-        lastUpdated: Date.now(),
-      },
-      { upsert: true, new: true }
-    );
-
-    res.status(200).json({
-      message: "✅ Progress updated successfully",
-      progress,
-    });
+    const readiness = await refreshReadiness(req.user);
+    const progress = await Progress.findOne({ userId: req.user.id });
+    res.status(200).json({ message: "Readiness recalculated", progress, readiness });
   } catch (err) {
     console.error("Update Progress Error:", err);
     res.status(500).json({ message: "Error updating progress" });
@@ -52,7 +32,11 @@ export const getUserProgress = async (req, res) => {
       });
     }
 
-    res.status(200).json(progress);
+    // Full breakdown: overall readiness, band, and each subject (weakest first) — see utils/readiness.js
+    const results = await Result.find({ studentId: req.user.id }).lean();
+    const readiness = computeReadiness(results, progress.prepSubjects);
+
+    res.status(200).json({ ...progress.toObject(), readiness });
   } catch (err) {
     console.error("Get User Progress Error:", err);
     res.status(500).json({ message: "Error fetching progress" });
@@ -72,49 +56,55 @@ export const getAllProgress = async (req, res) => {
   }
 };
 
-// PREP controller
 
-// Add new sub
+// ===== Exam plan: subjects with an exam date and the student's own confidence =====
+const CONF = ["High", "Medium", "Low"];
+
+// The student's progress record, created if it doesn't exist yet
+const myProgress = async (user) =>
+  (await Progress.findOne({ userId: user.id })) ||
+  Progress.create({ userId: user.id, branch: user.branch, progressPercent: 0, confidence: "Medium" });
+
+// Send back the plan plus the recalculated readiness (confidence changes the over/under-confidence flags)
+const sendPlan = async (res, user, progress, message, status = 200) => {
+  const results = await Result.find({ studentId: user.id }).lean();
+  res.status(status).json({ message, prepSubjects: progress.prepSubjects, readiness: computeReadiness(results, progress.prepSubjects) });
+};
+
+// Add a subject
 export const addPrepSubject = async (req, res) => {
   try {
-    const { subject, examDate, confidence } = req.body;
+    const subject = String(req.body.subject || "").trim();
+    const { examDate, confidence } = req.body;
+    if (!subject) return res.status(400).json({ message: "Subject is required" });
+    if (confidence && !CONF.includes(confidence)) return res.status(400).json({ message: "Confidence must be High, Medium or Low" });
 
-    const progress = await Progress.findOne({ userId: req.user.id });
-
-    progress.prepSubjects.push({
-      subject,
-      examDate,
-      confidence
-    });
-
+    const progress = await myProgress(req.user);
+    progress.prepSubjects.push({ subject, examDate: examDate || undefined, confidence: confidence || "Medium" });
     await progress.save();
-
-    res.status(201).json({ message: "Subject added", prepSubjects: progress.prepSubjects });
+    await sendPlan(res, req.user, progress, "Subject added", 201);
   } catch (err) {
-    console.error(err);
+    console.error("Add Prep Subject Error:", err);
     res.status(500).json({ message: "Error adding prep subject" });
   }
 };
 
-// Edit
+// Edit a subject's confidence or exam date
 export const updatePrepSubject = async (req, res) => {
   try {
     const { confidence, examDate } = req.body;
-    const subjectId = req.params.id;
+    if (confidence && !CONF.includes(confidence)) return res.status(400).json({ message: "Confidence must be High, Medium or Low" });
 
-    const progress = await Progress.findOne({ userId: req.user.id });
-
-    const sub = progress.prepSubjects.id(subjectId);
-
+    const progress = await myProgress(req.user);
+    const sub = progress.prepSubjects.id(req.params.id);
     if (!sub) return res.status(404).json({ message: "Subject not found" });
 
     if (confidence) sub.confidence = confidence;
     if (examDate) sub.examDate = examDate;
-
     await progress.save();
-
-    res.json({ message: "Updated", prepSubjects: progress.prepSubjects });
+    await sendPlan(res, req.user, progress, "Updated");
   } catch (err) {
+    console.error("Update Prep Subject Error:", err);
     res.status(500).json({ message: "Error updating subject" });
   }
 };
@@ -122,18 +112,12 @@ export const updatePrepSubject = async (req, res) => {
 // Delete a subject
 export const deletePrepSubject = async (req, res) => {
   try {
-    const subjectId = req.params.id;
-    const progress = await Progress.findOne({ userId: req.user.id });
-
-    progress.prepSubjects = progress.prepSubjects.filter(
-      (sub) => sub._id.toString() !== subjectId
-    );
-
+    const progress = await myProgress(req.user);
+    progress.prepSubjects = progress.prepSubjects.filter((sub) => sub._id.toString() !== req.params.id);
     await progress.save();
-
-    res.json({ message: "Deleted", prepSubjects: progress.prepSubjects });
+    await sendPlan(res, req.user, progress, "Deleted");
   } catch (err) {
+    console.error("Delete Prep Subject Error:", err);
     res.status(500).json({ message: "Error deleting subject" });
   }
 };
-

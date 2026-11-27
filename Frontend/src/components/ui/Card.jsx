@@ -2,12 +2,12 @@ import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { item } from "./motion.js";
 
-// Glass card with a soft glow that follows the cursor.
+// Flat card (optionally a faint spotlight that follows the cursor).
 // Pass variants={null} when the card sits inside a wrapper that runs its own animation.
 export default function Card({
   className = "",
-  glow = "rgba(139,92,246,0.14)",
-  spotlight = true,
+  glow = "rgba(255,255,255,0.04)",
+  spotlight = false,
   variants = item,
   children,
   ...rest

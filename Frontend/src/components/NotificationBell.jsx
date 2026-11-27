@@ -43,12 +43,12 @@ export default function NotificationBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/10 hover:text-white"
+        className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-300 transition hover:bg-white/10 hover:text-white"
         aria-label="Announcements"
       >
         <Bell size={18} className={unread ? "origin-top animate-[wiggle_1s_ease-in-out_2]" : ""} />
         {unread > 0 && (
-          <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-gradient-to-r from-rose-500 to-fuchsia-500 px-1 text-[10px] font-bold text-white shadow-lg">
+          <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-lg">
             {unread}
           </span>
         )}
@@ -66,13 +66,13 @@ export default function NotificationBell() {
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <div className="font-display font-semibold text-white">Announcements</div>
               {unread > 0 && (
-                <button onClick={markAll} className="flex items-center gap-1 text-xs text-violet-300 hover:text-violet-200">
+                <button onClick={markAll} className="flex items-center gap-1 text-xs text-accent hover:text-accent">
                   <CheckCheck size={14} /> Mark all read
                 </button>
               )}
             </div>
             <div className="max-h-96 overflow-y-auto p-2">
-              {items.length === 0 && <div className="px-3 py-8 text-center text-sm text-slate-400">You're all caught up ✨</div>}
+              {items.length === 0 && <div className="px-3 py-8 text-center text-sm text-zinc-400">You're all caught up ✨</div>}
               {items.map((n) => (
                 <button
                   key={n.id}
@@ -81,15 +81,15 @@ export default function NotificationBell() {
                 >
                   <span
                     className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                      n.read ? "bg-transparent" : n.priority ? "bg-rose-400 shadow-[0_0_10px] shadow-rose-400" : "bg-violet-400"
+ n.read ? "bg-transparent" : n.priority ? "bg-rose-400 shadow-[0_0_10px] shadow-rose-400" : "bg-accent"
                     }`}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-start gap-1.5 text-sm text-slate-200">
+                    <span className="flex items-start gap-1.5 text-sm text-zinc-200">
                       {n.priority && <Sparkles size={14} className="mt-0.5 shrink-0 text-rose-300" />}
                       {n.message}
                     </span>
-                    <span className="mt-1 block text-xs text-slate-500">
+                    <span className="mt-1 block text-xs text-zinc-500">
                       {timeAgo(n.createdAt)} · {n.audience}
                     </span>
                   </span>

@@ -22,7 +22,7 @@ function Switch({ on, onClick, label }) {
       <motion.span
         layout
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
-        className={`absolute top-0.5 h-[18px] w-[18px] rounded-full shadow ${on ? "right-0.5 bg-rose-200" : "left-0.5 bg-slate-300"}`}
+        className={`absolute top-0.5 h-[18px] w-[18px] rounded-full shadow ${on ? "right-0.5 bg-rose-200" : "left-0.5 bg-zinc-300"}`}
       />
     </button>
   );
@@ -80,7 +80,7 @@ export default function AdminLeaderboard() {
         eyebrow="Fair play"
         title="Leaderboard Moderation"
         subtitle="Monitor top contributors and flag suspicious activity."
-        gradient="from-violet-500 to-fuchsia-600"
+       
         actions={
           flaggedCount > 0 && (
             <span className="chip !border-rose-400/30 !bg-rose-500/10 !text-rose-200">
@@ -93,7 +93,7 @@ export default function AdminLeaderboard() {
       <Card className="p-0" spotlight={false}>
         <div className="border-b border-white/[0.06] p-4">
           <div className="relative max-w-md">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input placeholder="Search by student name or email…" value={search} onChange={(e) => setSearch(e.target.value)} className="input pl-10" />
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function AdminLeaderboard() {
               <tbody>
                 {filtered.map((r, i) => (
                   <motion.tr key={r._id} variants={item} className={r.flagged ? "!bg-rose-500/[0.07]" : ""}>
-                    <td className="font-display text-base font-bold text-slate-300">{i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}</td>
+                    <td className="font-display text-base font-bold text-zinc-300">{i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}</td>
                     <td>
                       <div className="flex items-center gap-3">
                         <Avatar name={r.studentId?.name || "?"} size={36} />
@@ -126,17 +126,17 @@ export default function AdminLeaderboard() {
                           <div className="flex items-center gap-1.5 font-semibold text-white">
                             {r.studentId?.name || "Unknown"} {r.flagged && <Flag size={12} className="fill-rose-400 text-rose-400" />}
                           </div>
-                          <div className="text-xs text-slate-500">{r.studentId?.email || ""}</div>
+                          <div className="text-xs text-zinc-500">{r.studentId?.email || ""}</div>
                         </div>
                       </div>
                     </td>
                     <td><span className="chip">{r.studentId?.branch || "N/A"}</span></td>
                     <td>
                       <div className="flex items-center gap-3">
-                        <span className="w-10 font-display font-bold text-violet-200">{r.score}</span>
+                        <span className="w-10 font-display font-bold text-accent">{r.score}</span>
                         <span className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
                           <motion.span
-                            className="block h-full rounded-full bg-gradient-to-r from-violet-400 to-cyan-300"
+                            className="block h-full rounded-full bg-accent "
                             initial={{ width: 0 }}
                             animate={{ width: `${(r.score / top) * 100}%` }}
                             transition={{ duration: 0.9, delay: i * 0.04 }}
@@ -144,7 +144,7 @@ export default function AdminLeaderboard() {
                         </span>
                       </div>
                     </td>
-                    <td className="text-slate-300">{r.contributions ?? r.uploads ?? 0}</td>
+                    <td className="text-zinc-300">{r.contributions ?? r.uploads ?? 0}</td>
                     <td className="text-right">
                       <div className="flex justify-end">
                         <Switch on={!!r.flagged} onClick={() => handleFlagUser(r.studentId, !r.flagged)} label={`Flag ${r.studentId?.name}`} />

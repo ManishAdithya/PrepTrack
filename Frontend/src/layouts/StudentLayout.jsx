@@ -12,7 +12,7 @@ import { GameProvider } from "../context/GameContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const allLinks = studentSections.flatMap((s) => s.links);
-const mobileLinks = allLinks.slice(0, 5).map((l) => ({ ...l, short: l.label.split(" ")[0] }));
+const mobileLinks = allLinks.slice(0, 5).map((l) => ({ ...l, short: l.short || l.label.split(" ")[0] }));
 
 function Shell() {
   const location = useLocation();
@@ -32,18 +32,18 @@ function Shell() {
   );
 
   return (
-    <div className="relative min-h-screen text-slate-100">
+    <div className="relative min-h-screen text-zinc-100">
       <AuroraBackground />
       <div className="flex">
         <Sidebar />
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 overflow-x-clip">
           <Topbar onOpenSearch={() => setSearchOpen(true)} />
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="mx-auto max-w-[1400px] p-4 pb-28 md:p-8 md:pb-12"
+            className="mx-auto max-w-6xl px-4 pt-5 pb-safe md:px-8 md:pt-8 md:pb-12"
           >
             <Outlet />
           </motion.div>

@@ -20,7 +20,7 @@ function Digit({ value, label }) {
         </AnimatePresence>
         <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-black/30" />
       </div>
-      <div className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</div>
+      <div className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-400">{label}</div>
     </div>
   );
 }
@@ -43,11 +43,11 @@ export default function Countdown({ date }) {
   return (
     <div className="flex items-start gap-2 sm:gap-3">
       <Digit value={days} label="days" />
-      <span className="mt-5 font-display text-2xl text-slate-600 sm:mt-6">:</span>
+      <span className="mt-5 font-display text-2xl text-zinc-600 sm:mt-6">:</span>
       <Digit value={hours} label="hours" />
-      <span className="mt-5 font-display text-2xl text-slate-600 sm:mt-6">:</span>
+      <span className="mt-5 font-display text-2xl text-zinc-600 sm:mt-6">:</span>
       <Digit value={mins} label="mins" />
-      <span className="mt-5 hidden font-display text-2xl text-slate-600 sm:mt-6 sm:inline">:</span>
+      <span className="mt-5 hidden font-display text-2xl text-zinc-600 sm:mt-6 sm:inline">:</span>
       <div className="hidden sm:block">
         <Digit value={secs} label="secs" />
       </div>

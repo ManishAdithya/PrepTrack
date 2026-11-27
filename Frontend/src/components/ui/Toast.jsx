@@ -7,8 +7,8 @@ const ToastCtx = createContext(() => {});
 const styles = {
   success: { icon: CheckCircle2, ring: "border-emerald-400/30", text: "text-emerald-300", bar: "bg-emerald-400" },
   error: { icon: AlertTriangle, ring: "border-rose-400/30", text: "text-rose-300", bar: "bg-rose-400" },
-  info: { icon: Info, ring: "border-cyan-400/30", text: "text-cyan-300", bar: "bg-cyan-400" },
-  reward: { icon: Sparkles, ring: "border-amber-300/40", text: "text-amber-300", bar: "bg-amber-300" },
+  info: { icon: Info, ring: "border-accent/30", text: "text-accent", bar: "bg-accent" },
+  reward: { icon: Sparkles, ring: "border-accent/40", text: "text-accent", bar: "bg-accent" },
 };
 
 export function ToastProvider({ children }) {
@@ -49,11 +49,11 @@ export function ToastProvider({ children }) {
                   <Icon size={20} className={`${s.text} mt-0.5 shrink-0`} />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-white">{t.title}</div>
-                    {t.description && <div className="mt-0.5 text-sm text-slate-400">{t.description}</div>}
+                    {t.description && <div className="mt-0.5 text-sm text-zinc-400">{t.description}</div>}
                   </div>
                   <button
                     onClick={() => dismiss(t.id)}
-                    className="text-slate-500 transition hover:text-white"
+                    className="text-zinc-500 transition hover:text-white"
                     aria-label="Dismiss"
                   >
                     <X size={16} />

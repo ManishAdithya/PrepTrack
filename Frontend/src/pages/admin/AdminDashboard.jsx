@@ -31,7 +31,7 @@ function ChartTip({ active, payload }) {
   return (
     <div className="glass-strong !rounded-xl px-3 py-2 text-xs">
       <div className="font-semibold text-white">{p.payload._id || p.name}</div>
-      <div className="font-display text-base font-bold text-cyan-200">{p.value} uploads</div>
+      <div className="font-display text-base font-bold text-accent">{p.value} uploads</div>
     </div>
   );
 }
@@ -79,16 +79,16 @@ export default function AdminDashboard() {
   const other = Math.max(0, total - approved - pending - rejected);
   const pie = [
     { name: "Approved", value: approved, color: "#34d399" },
-    { name: "Pending", value: pending, color: "#fbbf24" },
+    { name: "Pending", value: pending, color: "#FFD60A" },
     { name: "Rejected", value: rejected, color: "#fb7185" },
-    { name: "Revision / reported", value: other, color: "#38bdf8" },
+    { name: "Revision / reported", value: other, color: "#71717a" },
   ].filter((p) => p.value > 0);
 
   const tiles = [
-    { label: "Verified uploads", value: approved, icon: FileCheck2, g: "from-emerald-400 to-teal-600" },
-    { label: "Active uploaders", value: stats.activeUploaders, icon: Users, g: "from-cyan-400 to-blue-600" },
-    { label: "Pending approvals", value: pending, icon: Clock, g: "from-amber-300 to-orange-600", link: "/admin/content", cta: "Review now" },
-    { label: "Blocked users", value: stats.blocked, icon: Ban, g: "from-rose-400 to-pink-600" },
+    { label: "Verified uploads", value: approved, icon: FileCheck2, g: "bg-white/[0.06]" },
+    { label: "Active uploaders", value: stats.activeUploaders, icon: Users, g: "bg-white/[0.06]" },
+    { label: "Pending approvals", value: pending, icon: Clock, g: "bg-white/[0.06]", link: "/admin/content", cta: "Review now" },
+    { label: "Blocked users", value: stats.blocked, icon: Ban, g: "bg-white/[0.06]" },
   ];
 
   return (
@@ -97,59 +97,31 @@ export default function AdminDashboard() {
         icon={LayoutDashboard}
         eyebrow={greeting()}
         title={`Welcome, ${user?.name?.split(" ").slice(0, 2).join(" ") || "Admin"}`}
-        subtitle="Here's what's happening across PrepTrack today."
-        gradient="from-cyan-400 to-violet-600"
+        subtitle="What needs your attention in your class."
       />
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {tiles.map((t) => (
-          <Card key={t.label} className="p-5" glow="rgba(34,211,238,0.12)">
+          <Card key={t.label} className="p-4 sm:p-5">
             <div className="flex items-start justify-between">
-              <div className="text-sm text-slate-400">{t.label}</div>
-              <div className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${t.g} shadow-lg`}>
-                <t.icon size={18} className="text-white" />
-              </div>
+              <div className="text-sm text-zinc-400">{t.label}</div>
+              <t.icon size={17} className="text-zinc-500" />
             </div>
-            <div className="mt-2 font-display text-4xl font-bold text-white">
+            <div className="mt-2 font-display text-3xl font-bold text-white">
               <AnimatedNumber value={t.value || 0} />
             </div>
             {t.link ? (
-              <Link to={t.link} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-amber-200 hover:text-amber-100">
+              <Link to={t.link} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent">
                 {t.cta} <ArrowRight size={12} />
               </Link>
             ) : (
-              <div className="mt-1 text-xs text-slate-500">All time</div>
+              <div className="mt-1 text-xs text-zinc-500">All time</div>
             )}
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr,1fr]">
-        <Card className="p-6">
-          <h2 className="section-title mb-4">Uploads by academic branch</h2>
-          {stats.branchData.length === 0 ? (
-            <EmptyState icon={FolderOpenDot} title="No uploads yet" />
-          ) : (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.branchData} margin={{ left: -20, right: 8, top: 10 }}>
-                  <defs>
-                    <linearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="_id" tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<ChartTip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Bar dataKey="count" fill="url(#barFill)" radius={[10, 10, 0, 0]} maxBarSize={56} animationDuration={1200} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </Card>
-
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card className="p-6">
           <h2 className="section-title mb-2">Content approval status</h2>
           <div className="relative h-56">
@@ -176,7 +148,7 @@ export default function AdminDashboard() {
                 <div className="font-display text-3xl font-bold text-white">
                   <AnimatedNumber value={stats.approvalRate || 0} suffix="%" />
                 </div>
-                <div className="text-xs text-slate-400">approved</div>
+                <div className="text-xs text-zinc-400">approved</div>
               </div>
             </div>
           </div>
@@ -184,34 +156,10 @@ export default function AdminDashboard() {
             {pie.map((p) => (
               <div key={p.name} className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full" style={{ background: p.color }} />
-                <span className="text-slate-300">{p.name}</span>
+                <span className="text-zinc-300">{p.name}</span>
                 <span className="ml-auto font-semibold text-white">{p.value}</span>
-                <span className="w-12 text-right text-slate-500">{total ? Math.round((p.value / total) * 100) : 0}%</span>
+                <span className="w-12 text-right text-zinc-500">{total ? Math.round((p.value / total) * 100) : 0}%</span>
               </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr,1.4fr]">
-        <Card className="p-6">
-          <h2 className="section-title mb-4">Quick actions</h2>
-          <div className="space-y-2">
-            {[
-              { to: "/admin/content", icon: FolderOpenDot, label: "Review pending content", hint: `${pending} waiting`, g: "from-amber-300 to-orange-600" },
-              { to: "/admin/announcements", icon: Megaphone, label: "Publish an announcement", hint: "Reach every student", g: "from-violet-500 to-fuchsia-600" },
-              { to: "/admin/security", icon: Shield, label: "Check security logs", hint: "Logins & admin actions", g: "from-cyan-400 to-blue-600" },
-            ].map((a) => (
-              <Link key={a.to} to={a.to} className="group flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition hover:-translate-y-0.5 hover:border-white/15">
-                <div className={`grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${a.g}`}>
-                  <a.icon size={19} className="text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-semibold text-white">{a.label}</div>
-                  <div className="text-xs text-slate-400">{a.hint}</div>
-                </div>
-                <ArrowRight size={16} className="text-slate-500 transition group-hover:translate-x-1 group-hover:text-white" />
-              </Link>
             ))}
           </div>
         </Card>
@@ -219,12 +167,12 @@ export default function AdminDashboard() {
         <Card className="p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="section-title">
-              <Activity size={18} className="text-cyan-300" /> Recent activity
+              <Activity size={18} className="text-accent" /> Recent activity
             </h2>
-            <Link to="/admin/security" className="text-xs font-semibold text-cyan-300 hover:text-cyan-200">View all</Link>
+            <Link to="/admin/security" className="text-xs font-semibold text-accent hover:text-accent">View all</Link>
           </div>
           {logs.length === 0 ? (
-            <p className="text-sm text-slate-400">No recent events.</p>
+            <p className="text-sm text-zinc-400">No recent events.</p>
           ) : (
             <div className="relative space-y-4 before:absolute before:bottom-2 before:left-[15px] before:top-2 before:w-px before:bg-white/10">
               {logs.map((l, i) => {
@@ -235,10 +183,10 @@ export default function AdminDashboard() {
                       <st.icon size={14} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm text-slate-200">
+                      <div className="text-sm text-zinc-200">
                         <span className="font-semibold text-white">{l.userId?.name || "Unknown user"}</span> · {l.eventType}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-zinc-500">
                         {l.details} · {timeAgo(l.createdAt)}
                       </div>
                     </div>

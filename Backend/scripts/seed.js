@@ -1,4 +1,4 @@
-// Fills the database with realistic demo data for all four CSE batches (1st–4th year).
+// Fills the database with realistic demo data for the EEE 2024 class (roll numbers AM.EN.U4EEE24###).
 //   npm --prefix Backend run seed         -> (re)create the demo data
 //   npm --prefix Backend run seed:clear   -> remove everything this script added
 // Each batch gets its own classmates, materials, discussions, announcements, leaderboard and results,
@@ -23,50 +23,29 @@ const DAY = 86400000;
 const at = (days, hours = 0) => new Date(Date.now() + days * DAY + hours * 3600000);
 const pick = (arr, n) => arr.slice(0, n);
 
-// The batch now in 1st year: the academic year starts in July
+// Year of study for a joining batch (the academic year starts in July): 2024 -> 3 in Nov 2026
 const now = new Date();
-const FIRST_YEAR_BATCH = now.getFullYear() - (now.getMonth() >= 6 ? 0 : 1);
+const yearOf = (batch) => Math.min(4, Math.max(1, now.getFullYear() - batch + (now.getMonth() >= 6 ? 1 : 0)));
 
-// One entry per year of study. Classmates: [name, xp, uploads, readiness %, confidence]
-const YEARS = [
+// One entry per class. Classmates: [name, xp, uploads, readiness %, confidence]
+const CLASSES = [
   {
-    year: 1,
-    subjects: ["Programming in C", "Engineering Mathematics I", "Engineering Physics", "Digital Logic Design", "Problem Solving"],
+    branch: "EEE",
+    batch: 2024,
+    rollPrefix: "AM.EN.U4EEE24",
+    subjects: ["Power Systems", "Electrical Machines", "Control Systems", "Power Electronics", "Signals & Systems"],
     classmates: [
-      ["Ishaan Verma", 210, 16, 84, "High"], ["Tara Joseph", 175, 13, 79, "High"], ["Nikhil Bose", 140, 11, 71, "Medium"],
-      ["Aarav Shah", 105, 8, 66, "Medium"], ["Kavya Pillai", 70, 6, 58, "Low"], ["Yash Gupta", 35, 3, 49, "Low"],
+      ["Arjun Nair", 410, 29, 90, "High"], ["Meera Krishnan", 360, 26, 86, "High"], ["Rahul Menon", 305, 22, 81, "High"],
+      ["Sneha Pillai", 250, 18, 75, "Medium"], ["Karthik Iyer", 200, 15, 70, "Medium"], ["Divya Raj", 165, 12, 64, "Medium"],
+      ["Aditya Varma", 120, 9, 59, "Low"], ["Nandana S", 90, 7, 55, "Low"], ["Vishnu Prasad", 55, 4, 48, "Low"],
+      ["Gayathri Mohan", 25, 2, 42, "Low"],
     ],
-    announcements: [["Welcome to PrepTrack! Your first mid-terms start in 3 weeks.", true], ["C programming lab record submission due Friday.", false]],
-  },
-  {
-    year: 2,
-    subjects: ["Data Structures", "Discrete Mathematics", "Computer Organization", "Object Oriented Programming", "Probability & Statistics"],
-    classmates: [
-      ["Riya Sharma", 330, 24, 88, "High"], ["Dev Malhotra", 280, 21, 83, "High"], ["Neha Kulkarni", 230, 17, 76, "Medium"],
-      ["Sahil Khan", 180, 14, 70, "Medium"], ["Pooja Das", 120, 9, 61, "Low"], ["Manav Jain", 60, 5, 52, "Low"],
+    announcements: [
+      ["End-semester timetable is out — Power Systems is the first paper.", true],
+      ["Electrical Machines lab record submission closes Friday.", false],
     ],
-    announcements: [["End-semester timetable is out — Data Structures is the first paper.", true], ["Extra OOP lab session on Saturday, 10 am.", false]],
   },
-  {
-    year: 3,
-    subjects: ["Operating Systems", "DBMS", "Computer Networks", "Theory of Computation", "Software Engineering"],
-    classmates: [
-      ["Ananya Iyer", 420, 30, 91, "High"], ["Rohan Mehta", 365, 27, 86, "High"], ["Priya Nair", 310, 23, 82, "High"],
-      ["Karthik Raj", 255, 19, 74, "Medium"], ["Sneha Reddy", 198, 15, 69, "Medium"], ["Arjun Menon", 160, 12, 63, "Medium"],
-      ["Diya Patel", 120, 9, 58, "Low"], ["Vikram Singh", 85, 7, 52, "Low"],
-    ],
-    announcements: [["End-semester timetable is out! Plan your revision with the exam tracker.", true], ["New DBMS PYQ bundle approved and live in Study Materials.", false]],
-  },
-  {
-    year: 4,
-    subjects: ["Compiler Design", "Machine Learning", "Cloud Computing", "Cryptography", "Distributed Systems"],
-    classmates: [
-      ["Aditi Rao", 390, 28, 89, "High"], ["Siddharth Nambiar", 320, 24, 84, "High"], ["Lakshmi Menon", 260, 19, 77, "Medium"],
-      ["Rahul Varma", 200, 15, 70, "Medium"], ["Fatima Sheikh", 140, 10, 62, "Low"], ["Gautam Pillai", 80, 6, 54, "Low"],
-    ],
-    announcements: [["Placement drive: resume submissions close this Friday.", true], ["Final-year project review panels are posted.", false]],
-  },
-].map((y) => ({ ...y, batch: FIRST_YEAR_BATCH - (y.year - 1) }));
+].map((c) => ({ ...c, year: yearOf(c.batch) }));
 
 const ORDINAL = ["1st", "2nd", "3rd", "4th"];
 
@@ -110,7 +89,7 @@ async function clear(db) {
 
 async function seedBatch(db, Y, hash) {
   const { batch, subjects: S } = Y;
-  const scope = { branch: "CSE", batch };
+  const scope = { branch: Y.branch, batch };
   const yr = `${ORDINAL[Y.year - 1]} year`;
 
   // ---------- classmates (first one becomes the demo CR if the batch has no real CR) ----------
@@ -119,7 +98,7 @@ async function seedBatch(db, Y, hash) {
     _id: new ObjectId(),
     name,
     email: `${name.toLowerCase().replace(/\s+/g, ".")}.${batch % 100}@demo.preptrack.edu`,
-    rollNumber: `AM.SC.U4CSE${batch % 100}${String(101 + i).padStart(3, "0")}`,
+    rollNumber: `${Y.rollPrefix}${String(101 + i).padStart(3, "0")}`,
     ...scope,
     role: i === 0 && realCRs === 0 ? "admin" : "student",
     password: hash,
@@ -144,7 +123,7 @@ async function seedBatch(db, Y, hash) {
   Y.classmates.forEach(([name, , , readiness, confidence], i) => {
     const uid = String(id(name));
     progress.push({
-      userId: uid, branch: "CSE", progressPercent: readiness, confidence, lastUpdated: at(-i),
+      userId: uid, branch: Y.branch, progressPercent: readiness, confidence, lastUpdated: at(-i),
       prepSubjects: pick(S, 3).map((s, k) => ({ _id: new ObjectId(), subject: s, examDate: at(4 + k * 5, 4), confidence: ["High", "Medium", "Low"][(i + k) % 3] })),
       seed: true, __v: 0,
     });
@@ -168,7 +147,7 @@ async function seedBatch(db, Y, hash) {
       { userId: uid },
       {
         $set: {
-          branch: "CSE", progressPercent: 77, confidence: "Medium", lastUpdated: new Date(), seedPrep: true,
+          branch: Y.branch, progressPercent: 77, confidence: "Medium", lastUpdated: new Date(), seedPrep: true,
           prepSubjects: [
             { _id: new ObjectId(), subject: S[0], examDate: at(4, 4), confidence: "Medium" },
             { _id: new ObjectId(), subject: S[1], examDate: at(9, 4), confidence: "High" },
@@ -200,7 +179,7 @@ async function seedBatch(db, Y, hash) {
   ];
   const materials = MATERIALS.map(([title, type, by, status, approvedBy, votes, days], i) => {
     const file = `seed-${batch}-${i + 1}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}.pdf`;
-    fs.writeFileSync(path.join(STORAGE, file), makePdf(title, [`Uploaded by ${by} for CSE ${batch} batch (${yr})`, "Sample material created for the PrepTrack demo.", "", "1. Key concepts", "2. Important questions", "3. Quick revision points"]));
+    fs.writeFileSync(path.join(STORAGE, file), makePdf(title, [`Uploaded by ${by} for ${Y.branch} ${batch} batch (${yr})`, "Sample material created for the PrepTrack demo.", "", "1. Key concepts", "2. Important questions", "3. Quick revision points"]));
     const uploader = id(by);
     const others = voters.filter((v) => !v.equals(uploader));
     return {
@@ -254,7 +233,7 @@ async function seedBatch(db, Y, hash) {
     LOGS.map(([name, eventType, details, h], i) => ({ userId: id(name), eventType, details, ipAddress: `10.${Y.year}.${4 + i}.${30 + i * 7}`, createdAt: at(0, h), updatedAt: at(0, h), seed: true, __v: 0 }))
   );
 
-  console.log(`  CSE ${batch} batch (${yr}): ${users.length} classmates, ${materials.length} materials, ${DISCUSSIONS.length} discussions` +
+  console.log(`  ${Y.branch} ${batch} batch (${yr}): ${users.length} classmates, ${materials.length} materials, ${DISCUSSIONS.length} discussions` +
     (cr ? ` — demo CR: ${cr.email}` : ` — CR: ${realCR?.name} (real account)`));
   return cr ? [`${yr}`.padEnd(9) + cr.email + "  (CR)", `${yr}`.padEnd(9) + users[1].email] : [`${yr}`.padEnd(9) + users[1].email];
 }
@@ -262,10 +241,10 @@ async function seedBatch(db, Y, hash) {
 async function seed(db) {
   const hash = await bcrypt.hash(DEMO_PASSWORD, 10);
   const logins = [];
-  for (const Y of YEARS) logins.push(...(await seedBatch(db, Y, hash)));
+  for (const Y of CLASSES) logins.push(...(await seedBatch(db, Y, hash)));
 
   // ---------- branches (just the list shown on the Branches page) ----------
-  const BRANCHES = [["Computer Science & Engineering", "CSE"], ["Electronics & Communication", "ECE"], ["Mechanical Engineering", "MECH"], ["Civil Engineering", "CIVIL"], ["AI & Machine Learning", "AIML"]];
+  const BRANCHES = [["Electrical & Electronics Engineering", "EEE"], ["Computer Science & Engineering", "CSE"], ["Electronics & Communication", "ECE"], ["Mechanical Engineering", "MECH"], ["Civil Engineering", "CIVIL"], ["AI & Machine Learning", "AIML"]];
   for (const [branchName, branchCode] of BRANCHES) {
     if (!(await db.collection("branches").findOne({ branchCode })))
       await db.collection("branches").insertOne({ branchName, branchCode, createdAt: at(-300), updatedAt: at(-300), seed: true, __v: 0 });

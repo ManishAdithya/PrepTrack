@@ -1,25 +1,26 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { motion } from "framer-motion";
 
-// Bottom tab bar for phones (the sidebar is hidden below md)
+// Bottom tab bar for phones (the sidebar is hidden below md).
+// Full-width, solid, and padded for the iPhone home indicator.
 export default function MobileNav({ links }) {
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-40 md:hidden">
-      <div className="glass-strong flex items-center justify-around !rounded-2xl px-1 py-1.5">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-ink-900 md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex">
         {links.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end ?? true} className="relative flex-1">
+          <NavLink key={l.to} to={l.to} end={l.end ?? true} className="flex-1">
             {({ isActive }) => (
-              <div className={`relative flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-semibold ${isActive ? "text-white" : "text-slate-500"}`}>
-                {isActive && (
-                  <motion.span
-                    layoutId="mobile-active"
-                    className="absolute inset-0 rounded-xl bg-gradient-to-b from-violet-500/30 to-fuchsia-500/10"
-                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                  />
-                )}
-                <l.icon size={19} className="relative" />
-                <span className="relative">{l.short || l.label}</span>
+              <div
+                className={`relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold ${
+                  isActive ? "text-accent" : "text-zinc-500"
+                }`}
+              >
+                {isActive && <span className="absolute top-0 h-[3px] w-8 rounded-b bg-accent" />}
+                <l.icon size={21} strokeWidth={isActive ? 2.4 : 2} />
+                <span>{l.short || l.label}</span>
               </div>
             )}
           </NavLink>

@@ -23,12 +23,12 @@ export function FocusFace({ size = 190 }) {
         value={pct}
         size={size}
         stroke={10}
-        from={isBreak ? "#34d399" : "#a78bfa"}
-        to={isBreak ? "#22d3ee" : "#f0abfc"}
+        from={isBreak ? "#34d399" : "#FFD60A"}
+        to={isBreak ? "#34d399" : "#FFD60A"}
       >
         <div>
           <div className="font-display text-4xl font-bold tabular-nums text-white">{formatClock(f.secondsLeft)}</div>
-          <div className="mt-1 text-xs text-slate-400">{f.running ? (isBreak ? "Recharging…" : "Stay in the zone") : "Paused"}</div>
+          <div className="mt-1 text-xs text-zinc-400">{f.running ? (isBreak ? "Recharging…" : "Stay in the zone") : "Paused"}</div>
         </div>
       </ProgressRing>
       <div className="flex items-center gap-2">
@@ -48,11 +48,11 @@ export function FocusFace({ size = 190 }) {
       <div className="grid w-full grid-cols-2 gap-2 text-center">
         <div className="rounded-xl bg-white/[0.04] px-3 py-2">
           <div className="font-display text-lg font-bold text-white">{f.stats.minutesToday}</div>
-          <div className="text-[11px] text-slate-400">minutes today</div>
+          <div className="text-[11px] text-zinc-400">minutes today</div>
         </div>
         <div className="rounded-xl bg-white/[0.04] px-3 py-2">
           <div className="font-display text-lg font-bold text-white">{f.stats.sessionsToday}</div>
-          <div className="text-[11px] text-slate-400">sessions today</div>
+          <div className="text-[11px] text-zinc-400">sessions today</div>
         </div>
       </div>
     </div>
@@ -77,15 +77,15 @@ export default function FocusChip() {
       <button
         onClick={() => setOpen((o) => !o)}
         className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${
-          f.running
-            ? "border-violet-400/40 bg-violet-500/15 text-violet-100 shadow-glow"
-            : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/10 hover:text-white"
+ f.running
+ ? "border-accent/40 bg-accent/15 text-accent shadow-glow"
+            : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
         }`}
       >
         {f.running ? (
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-400" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
           </span>
         ) : (
           <Timer size={16} />

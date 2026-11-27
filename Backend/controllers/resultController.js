@@ -1,25 +1,44 @@
 import Result from "../models/Result.js";
 import Progress from "../models/Progress.js";
 import { userInScope } from "../utils/scope.js";
+import { computeReadiness, storedSummary } from "../utils/readiness.js";
+
+// Recalculate a student's readiness from all their results and save the summary
+export async function refreshReadiness(user) {
+  const [results, progress] = await Promise.all([
+    Result.find({ studentId: user.id }).lean(),
+    Progress.findOne({ userId: user.id }).lean(),
+  ]);
+  const readiness = computeReadiness(results, progress?.prepSubjects || []);
+  await Progress.findOneAndUpdate(
+    { userId: user.id },
+    { $set: { ...storedSummary(readiness), branch: user.branch } },
+    { upsert: true }
+  );
+  return readiness;
+}
 
 // POST /api/result/upload → Students upload exam results
 export const uploadResult = async (req, res) => {
   try {
-    const { subject, marks, totalMarks, examDate } = req.body;
-    const studentId = req.user.role === "admin" && req.body.studentId
-      ? req.body.studentId
-      : req.user.id;
+    const { examDate } = req.body;
+    const subject = String(req.body.subject || "").trim();
+    const marks = Number(req.body.marks);
+    const totalMarks = Number(req.body.totalMarks);
 
-    if (!subject || !marks || !totalMarks) {
-      return res.status(400).json({ message: "All fields are required" });
+    // 0 marks is a valid result, so check for numbers rather than truthiness
+    if (!subject || !Number.isFinite(marks) || !Number.isFinite(totalMarks) || totalMarks <= 0) {
+      return res.status(400).json({ message: "Subject, marks and total marks are required" });
+    }
+    if (marks < 0 || marks > totalMarks) {
+      return res.status(400).json({ message: "Marks must be between 0 and the total marks" });
     }
 
-    // Compute percentage automatically
     const percentage = Math.round((marks / totalMarks) * 100);
 
-    // Create result entry
+    // Always the logged-in student's own result
     const result = await Result.create({
-      studentId: req.user.id, // use authenticated user
+      studentId: req.user.id,
       subject,
       marks,
       totalMarks,
@@ -27,26 +46,13 @@ export const uploadResult = async (req, res) => {
       uploadedAt: examDate || new Date(),
     });
 
-    // Calculate confidence level
-    const confidence =
-      percentage >= 80 ? "High" : percentage >= 60 ? "Medium" : "Low";
-
-    // Auto-update progress model
-    await Progress.findOneAndUpdate(
-      { userId: req.user.id },
-      {
-        $set: {
-          progressPercent: percentage,
-          confidence,
-          lastUpdated: Date.now(),
-        },
-      },
-      { upsert: true, new: true }
-    );
+    // Recalculate readiness from ALL the student's results (see utils/readiness.js)
+    const readiness = await refreshReadiness(req.user);
 
     res.status(201).json({
-      message: "✅ Result uploaded successfully and progress updated",
+      message: "Result saved — readiness updated",
       result,
+      readiness,
     });
   } catch (err) {
     console.error("Upload Result Error:", err);

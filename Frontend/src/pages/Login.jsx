@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, GraduationCap, ShieldCheck, ArrowRight, Loader2, FlaskConical } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2, FlaskConical } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { DEMO_MODE } from "../api";
 import AuthShell from "../components/AuthShell.jsx";
-import Segmented from "../components/ui/Segmented.jsx";
 
 export default function Login() {
   const { login } = useAuth();
-  const [tab, setTab] = useState("student");
   const [emailOrRoll, setEmailOrRoll] = useState("");
   const [pwd, setPwd] = useState("");
   const [show, setShow] = useState(false);
@@ -39,18 +37,8 @@ export default function Login() {
 
   return (
     <AuthShell>
-      <h2 className="text-3xl font-bold text-white">Welcome back 👋</h2>
-      <p className="mt-1 text-slate-400">Sign in to continue your prep streak.</p>
-
-      <Segmented
-        className="mt-6 grid w-full grid-cols-2"
-        value={tab}
-        onChange={setTab}
-        options={[
-          { value: "student", label: "Student", icon: GraduationCap },
-          { value: "admin", label: "Administrator", icon: ShieldCheck },
-        ]}
-      />
+      <h2 className="text-2xl font-bold text-white sm:text-3xl">Sign in</h2>
+      <p className="mt-1 text-sm text-zinc-400">CRs and students use the same login.</p>
 
       <motion.form
         key={shake}
@@ -60,13 +48,15 @@ export default function Login() {
         className="mt-6 space-y-4"
       >
         <div>
-          <label className="label">{tab === "admin" ? "Admin email" : "Email"}</label>
+          <label className="label">Email</label>
           <div className="relative">
-            <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               value={emailOrRoll}
               onChange={(e) => setEmailOrRoll(e.target.value)}
-              placeholder={tab === "admin" ? "admin@example.com" : "user@college.edu"}
+              placeholder="you@college.edu"
+              type="email"
+              inputMode="email"
               className="input pl-11"
               autoComplete="username"
               required
@@ -77,7 +67,7 @@ export default function Login() {
         <div>
           <label className="label">Password</label>
           <div className="relative">
-            <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type={show ? "text" : "password"}
               value={pwd}
@@ -90,7 +80,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShow((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-zinc-400 transition hover:text-white"
               aria-label={show ? "Hide password" : "Show password"}
             >
               {show ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -125,17 +115,17 @@ export default function Login() {
       </motion.form>
 
       {DEMO_MODE && (
-        <div className="mt-5 flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-3 py-2.5 text-xs text-amber-100/90">
-          <FlaskConical size={14} className="mt-0.5 shrink-0 text-amber-300" />
+        <div className="mt-5 flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/[0.06] px-3 py-2.5 text-xs text-accent/90">
+          <FlaskConical size={14} className="mt-0.5 shrink-0 text-accent" />
           <span>
             Demo mode: any email and password work. Use an email containing <b>admin</b> to open the admin portal.
           </span>
         </div>
       )}
 
-      <div className="mt-6 text-center text-sm text-slate-400">
+      <div className="mt-6 text-center text-sm text-zinc-400">
         Don't have an account?{" "}
-        <Link to="/signup" className="font-semibold text-violet-300 hover:text-violet-200">
+        <Link to="/signup" className="font-semibold text-accent hover:text-accent">
           Create one
         </Link>
       </div>

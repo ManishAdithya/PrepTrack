@@ -14,8 +14,8 @@ export default function AdminTopbar({ title = "Admin Dashboard", onOpenSearch })
           <Brand subtitle="" />
         </div>
         <div className="hidden min-w-0 items-center gap-2 text-sm md:flex">
-          <span className="text-slate-500">Admin</span>
-          <span className="text-slate-600">/</span>
+          <span className="text-zinc-500">Admin</span>
+          <span className="text-zinc-600">/</span>
           <span className="truncate font-semibold text-white">{title}</span>
         </div>
         <div className="mx-auto hidden w-full max-w-sm lg:block">
@@ -23,7 +23,7 @@ export default function AdminTopbar({ title = "Admin Dashboard", onOpenSearch })
         </div>
         <div className="ml-auto flex items-center gap-3">
           <DemoBadge />
-          <span className="hidden items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 sm:inline-flex">
+          <span className="hidden items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent sm:inline-flex">
             <ShieldCheck size={14} /> Administrator
           </span>
           <Avatar name={user?.name || user?.email || "Admin"} size={36} />

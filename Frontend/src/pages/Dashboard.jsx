@@ -1,61 +1,45 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  BookOpen,
-  MessagesSquare,
-  TrendingUp,
-  Trophy,
-  ChevronRight,
-  Bell,
-  Sparkles,
-  Clock,
-  Gauge,
-  Target,
-  Timer,
-  Lightbulb,
-  CalendarClock,
-  Flame,
-  Crown,
-  ArrowUpRight,
-} from "lucide-react";
+import { ChevronRight, Timer, Upload, Megaphone, ArrowUpRight, CalendarClock } from "lucide-react";
 import API from "../api";
 import { useUser } from "../context/UserContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useGame } from "../context/GameContext.jsx";
 import { useFocus } from "../context/FocusContext.jsx";
 import Card from "../components/ui/Card.jsx";
-import ProgressRing from "../components/ui/ProgressRing.jsx";
-import AnimatedNumber from "../components/ui/AnimatedNumber.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import Skeleton from "../components/ui/Skeleton.jsx";
-import Countdown from "../components/Countdown.jsx";
+import ReadinessHelp from "../components/ReadinessHelp.jsx";
 import { FocusFace } from "../components/FocusTimer.jsx";
 import { container, item } from "../components/ui/motion.js";
-import { greeting, tipOfTheDay } from "../utils/gamification.js";
-import { confidenceOf, daysUntil, isNew, shortDate, timeAgo, typeOf } from "../utils/ui.js";
+import { greeting } from "../utils/gamification.js";
+import { bandOf, daysUntil, isNew, shortDate, timeAgo, typeOf } from "../utils/ui.js";
 
-const quickActions = [
-  { icon: BookOpen, label: "Browse Materials", hint: "Notes, slides & PYQs", route: "/resources", gradient: "from-cyan-400 to-blue-600" },
-  { icon: MessagesSquare, label: "Join Discussion", hint: "Ask your batchmates", route: "/discussions", gradient: "from-pink-400 to-fuchsia-600" },
-  { icon: TrendingUp, label: "Track Progress", hint: "Results & readiness", route: "/progress", gradient: "from-emerald-400 to-teal-600" },
-  { icon: Trophy, label: "Leaderboard", hint: "See who's on top", route: "/leaderboard", gradient: "from-amber-300 to-orange-600" },
-];
-
-function StatTile({ icon: Icon, label, value, suffix = "", hint, gradient }) {
+// One number with a label; the whole cell is a link
+function Glance({ to, label, value, sub, subClass = "text-zinc-500", extra }) {
   return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between">
-        <div className="text-sm text-slate-400">{label}</div>
-        <div className={`grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}>
-          <Icon size={17} className="text-white" />
-        </div>
+    <Link to={to} className="group min-w-0 flex-1 p-4 transition hover:bg-white/[0.03] sm:p-5">
+      <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+        {label}
+        {extra}
       </div>
-      <div className="mt-2 font-display text-3xl font-bold text-white">
-        {typeof value === "number" ? <AnimatedNumber value={value} suffix={suffix} /> : value}
-      </div>
-      <div className="mt-1 text-xs text-slate-500">{hint}</div>
-    </Card>
+      <div className="mt-1 truncate font-display text-2xl font-bold text-white sm:text-3xl">{value}</div>
+      <div className={`truncate text-xs ${subClass}`}>{sub}</div>
+    </Link>
+  );
+}
+
+function SectionHead({ title, to, linkLabel = "View all" }) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="font-display text-base font-bold text-white">{title}</h2>
+      {to && (
+        <Link to={to} className="flex items-center text-sm font-semibold text-zinc-400 hover:text-white">
+          {linkLabel} <ChevronRight size={16} />
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -68,368 +52,198 @@ export default function Dashboard() {
 
   const [materials, setMaterials] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [progressData, setProgressData] = useState(null);
-  const [prepSubjects, setPrepSubjects] = useState([]);
-  const [results, setResults] = useState([]);
+  const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        const [matRes, noteRes, progRes, resRes] = await Promise.all([
-          API.get("/upload"),
-          API.get("/notification"),
-          API.get("/progress"),
-          API.get("/result").catch(() => ({ data: [] })),
-        ]);
-
-        setMaterials(matRes.data.slice(0, 4));
-        setAnnouncements(noteRes.data.slice(0, 3));
-        setProgressData(progRes.data);
-        setPrepSubjects(progRes.data.prepSubjects || []);
-        setResults(resRes.data || []);
-      } catch (err) {
-        console.error("Dashboard Fetch Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAll();
+    Promise.all([API.get("/upload"), API.get("/notification"), API.get("/progress")])
+      .then(([m, n, p]) => {
+        setMaterials(m.data.slice(0, 3));
+        setAnnouncements(n.data);
+        setProgress(p.data);
+      })
+      .catch((err) => console.error("Dashboard Fetch Error:", err))
+      .finally(() => setLoading(false));
   }, []);
-
-  const upcoming = [...prepSubjects]
-    .filter((s) => s.examDate && new Date(s.examDate) > Date.now())
-    .sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
-  const nextExam = upcoming[0];
-
-  const avgScore = results.length
-    ? Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length)
-    : 0;
 
   const name = user?.name || authUser?.name || "Student";
   const firstName = name.split(" ")[0];
-  const readiness = progressData?.progressPercent || 0;
+  const readiness = progress?.readiness;
+  const nextExam = (progress?.prepSubjects || [])
+    .filter((s) => s.examDate && new Date(s.examDate) > Date.now())
+    .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))[0];
+  const urgent = announcements.find((a) => a.priority && !a.read);
+  const otherNews = announcements.filter((a) => a !== urgent).slice(0, 2);
 
   // the student plus the people right around them on the leaderboard
   const myIndex = game.rank ? game.rank - 1 : -1;
-  const nearby = game.leaders.slice(0, 3);
-  if (myIndex >= 3) nearby.push(game.leaders[myIndex]);
+  const nearby = game.leaders.slice(Math.max(0, myIndex - 1), Math.max(0, myIndex - 1) + 3);
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      {/* ===== HERO ===== */}
-      <Card className="overflow-hidden p-6 sm:p-8" spotlight={false}>
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-violet-600/30 via-fuchsia-600/10 to-cyan-500/20" />
-        <div className="absolute -right-20 -top-24 -z-10 h-72 w-72 animate-float rounded-full bg-fuchsia-500/25 blur-3xl" />
-        <div className="absolute -bottom-24 left-1/3 -z-10 h-60 w-60 rounded-full bg-cyan-400/20 blur-3xl" />
-
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur">
-              <Sparkles size={13} className="text-amber-200" /> {greeting()}
-            </div>
-            <h1 className="text-4xl font-bold leading-tight text-white sm:text-5xl">
-              Hey {firstName}, <span className="text-gradient">let's level up</span> today.
-            </h1>
-            <p className="mt-3 text-base text-slate-300">
-              {game.streak.count > 1 ? (
-                <>
-                  You're on a <span className="font-semibold text-orange-300">{game.streak.count}-day streak</span> 🔥 — keep it alive.{" "}
-                </>
-              ) : (
-                <>Showing up is half the battle — you're here. </>
-              )}
-              {game.ahead ? (
-                <>
-                  Just <span className="font-semibold text-violet-200">{game.ahead.score - game.xp + 1} XP</span> to overtake{" "}
-                  <span className="font-semibold text-white">{game.ahead.name}</span>.
-                </>
-              ) : game.rank === 1 ? (
-                <>You're <span className="font-semibold text-amber-200">#1 on the leaderboard</span>. Defend the crown! 👑</>
-              ) : (
-                <>Upload your first material to start earning XP.</>
-              )}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button onClick={focus.running ? focus.pause : focus.start} className="btn-primary">
-                <Timer size={16} /> {focus.running ? "Pause focus session" : "Start a focus session"}
-              </button>
-              <button onClick={() => navigate("/resources?upload=1")} className="btn-ghost">
-                <ArrowUpRight size={16} /> Upload & earn XP
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <ProgressRing value={game.level.progress * 100} size={150} stroke={12} from="#fbbf24" to="#f472b6">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-300">Level</div>
-                <div className="font-display text-5xl font-bold text-white">{game.level.level}</div>
-              </div>
-            </ProgressRing>
-            <div className="space-y-2">
-              <div className="font-display text-lg font-bold text-white">{game.level.title}</div>
-              <div className="flex flex-wrap gap-2">
-                <span className="chip !border-amber-300/30 !bg-amber-300/10 !text-amber-100">
-                  <Sparkles size={12} /> {game.xp} XP
-                </span>
-                {game.rank && (
-                  <span className="chip !border-violet-300/30 !bg-violet-300/10 !text-violet-100">
-                    <Crown size={12} /> Rank #{game.rank}
-                  </span>
-                )}
-                <span className="chip !border-orange-300/30 !bg-orange-300/10 !text-orange-100">
-                  <Flame size={12} /> {game.streak.count}d
-                </span>
-              </div>
-              <div className="text-xs text-slate-400">
-                {game.level.nextTitle ? `${game.level.toNext} XP to "${game.level.nextTitle}"` : "Max level 👑"}
-              </div>
-            </div>
-          </div>
+      {/* ===== Greeting ===== */}
+      <motion.div variants={item} className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm text-zinc-500">{greeting()}</div>
+          <h1 className="truncate text-2xl font-bold text-white sm:text-3xl">Hi {firstName}</h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            {game.ahead ? (
+              <>
+                <span className="font-semibold text-accent">{game.ahead.score - game.xp + 1} XP</span> to pass {game.ahead.name.split(" ")[0]}
+              </>
+            ) : game.rank === 1 ? (
+              <>You're <span className="font-semibold text-accent">#1</span> in your class</>
+            ) : (
+              <>Upload your first material to start earning XP</>
+            )}
+          </p>
         </div>
+        <button
+          onClick={focus.running ? focus.pause : focus.start}
+          className={`shrink-0 lg:hidden ${focus.running ? "btn-ghost" : "btn-primary"}`}
+        >
+          <Timer size={16} /> {focus.running ? "Pause" : "Focus"}
+        </button>
+      </motion.div>
+
+      {/* ===== Urgent announcement (only when there is one) ===== */}
+      {urgent && (
+        <motion.div variants={item} initial="hidden" animate="show" className="flex gap-3 rounded-2xl border border-accent/40 bg-accent/[0.07] p-4">
+          <Megaphone size={18} className="mt-0.5 shrink-0 text-accent" />
+          <div className="min-w-0 text-sm">
+            <div className="text-white">{urgent.message}</div>
+            <div className="mt-1 text-xs text-zinc-500">
+              {urgent.createdBy} · {timeAgo(urgent.createdAt)}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ===== At a glance ===== */}
+      <Card variants={item} className="flex divide-x divide-white/[0.06] p-0">
+        {loading ? (
+          <div className="flex-1 p-5">
+            <Skeleton className="h-16" />
+          </div>
+        ) : (
+          <>
+            <Glance
+              to="/progress"
+              label="Readiness"
+              extra={<ReadinessHelp iconOnly />}
+              value={readiness?.overall != null ? `${readiness.overall}%` : "—"}
+              sub={readiness?.band || "Log a result"}
+              subClass={readiness?.band ? bandOf(readiness.band).text : "text-zinc-500"}
+            />
+            <Glance
+              to="/progress"
+              label="Next exam"
+              value={nextExam ? `${Math.max(0, daysUntil(nextExam.examDate))}d` : "—"}
+              sub={nextExam ? nextExam.subject : "Add exam dates"}
+              subClass={nextExam && daysUntil(nextExam.examDate) <= 5 ? "text-rose-400" : "text-zinc-500"}
+            />
+            <Glance to="/leaderboard" label="Rank" value={game.rank ? `#${game.rank}` : "—"} sub={`${game.xp} XP`} />
+          </>
+        )}
       </Card>
 
-      {/* ===== STATS ===== */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <StatTile icon={Gauge} label="Exam readiness" value={readiness} suffix="%" hint={`Confidence: ${progressData?.confidence || "Medium"}`} gradient="from-violet-500 to-fuchsia-600" />
-        <StatTile icon={Target} label="Average score" value={avgScore} suffix="%" hint={`${results.length} results logged`} gradient="from-emerald-400 to-teal-600" />
-        <StatTile
-          icon={CalendarClock}
-          label="Next exam in"
-          value={nextExam ? Math.max(0, daysUntil(nextExam.examDate)) : "—"}
-          suffix=" days"
-          hint={nextExam ? nextExam.subject : "No exams scheduled"}
-          gradient="from-amber-300 to-orange-600"
-        />
-        <StatTile icon={Timer} label="Focus today" value={focus.stats.minutesToday} suffix=" min" hint={`${focus.stats.sessionsToday} sessions completed`} gradient="from-cyan-400 to-blue-600" />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr,380px]">
-        {/* ===== LEFT COLUMN ===== */}
+      <div className="grid gap-6 lg:grid-cols-[1fr,320px]">
         <div className="min-w-0 space-y-6">
-          {/* Next exam countdown */}
-          <Card className="p-6" glow="rgba(251,191,36,0.12)">
-            {loading ? (
-              <Skeleton className="h-28" />
-            ) : nextExam ? (
-              <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-amber-200/80">
-                    <Clock size={14} /> Next exam
-                  </div>
-                  <div className="mt-2 font-display text-2xl font-bold text-white">{nextExam.subject}</div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-400">
-                    {new Date(nextExam.examDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                    <span className={`chip ${confidenceOf(nextExam.confidence).chip}`}>{nextExam.confidence} confidence</span>
-                  </div>
-                  <Link to="/progress" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-violet-300 hover:text-violet-200">
-                    Plan your revision <ChevronRight size={16} />
-                  </Link>
+          {/* ===== New materials ===== */}
+          <motion.section variants={item}>
+            <SectionHead title="New materials" to="/resources" />
+            <Card variants={null} className="divide-y divide-white/[0.06] p-0">
+              {loading ? (
+                <div className="p-4">
+                  <Skeleton className="h-14" />
                 </div>
-                <Countdown date={nextExam.examDate} />
-              </div>
-            ) : (
-              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="font-display text-xl font-bold text-white">No upcoming exams yet</div>
-                  <p className="text-sm text-slate-400">Add your exam dates to get a live countdown and smart reminders.</p>
-                </div>
-                <button onClick={() => navigate("/progress")} className="btn-primary">
-                  <CalendarClock size={16} /> Add exam dates
+              ) : materials.length === 0 ? (
+                <button onClick={() => navigate("/resources?upload=1")} className="flex w-full items-center gap-3 p-4 text-left text-sm text-zinc-400 hover:text-white">
+                  <Upload size={16} /> Nothing yet — be the first to upload
                 </button>
-              </div>
-            )}
-          </Card>
-
-          {/* Quick actions */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {quickActions.map((a) => (
-              <motion.button
-                key={a.label}
-                variants={item}
-                whileHover={{ y: -4 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => navigate(a.route)}
-                className="glass group p-5 text-left transition-colors hover:border-white/20"
-              >
-                <div className={`grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br ${a.gradient} shadow-lg transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110`}>
-                  <a.icon size={20} className="text-white" />
-                </div>
-                <div className="mt-4 font-semibold text-white">{a.label}</div>
-                <div className="text-xs text-slate-400">{a.hint}</div>
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Recently added */}
-          <Card className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="section-title">
-                <BookOpen size={18} className="text-cyan-300" /> Fresh study materials
-              </h2>
-              <Link to="/resources" className="text-sm font-semibold text-violet-300 hover:text-violet-200">
-                View all
-              </Link>
-            </div>
-            {loading ? (
-              <div className="grid gap-3 md:grid-cols-2">
-                {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20" />)}
-              </div>
-            ) : materials.length === 0 ? (
-              <p className="text-sm text-slate-400">📂 No new materials yet — be the first to upload one!</p>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {materials.map((it) => {
-                  const t = typeOf(it.type);
+              ) : (
+                materials.map((m) => {
+                  const t = typeOf(m.type);
                   return (
                     <a
-                      key={it._id}
-                      href={it.fileUrl}
+                      key={m._id}
+                      href={m.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.06]"
+                      className="group flex items-center gap-3 p-4 transition hover:bg-white/[0.03]"
                     >
-                      <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${t.gradient}`}>
-                        <t.icon size={20} className="text-white" />
-                      </div>
+                      <t.icon size={18} className="shrink-0 text-zinc-500" />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-semibold text-white group-hover:text-violet-200">{it.title}</div>
-                        <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-400">
-                          <span>{t.label}</span>·<span>{shortDate(it.releaseDate)}</span>
-                          {isNew(it.releaseDate) && <span className="rounded-full bg-fuchsia-500/20 px-1.5 text-[10px] font-bold text-fuchsia-200">NEW</span>}
+                        <div className="truncate text-sm font-semibold text-white">{m.title}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500">
+                          {t.label} · {shortDate(m.releaseDate)}
+                          {isNew(m.releaseDate) && <span className="font-bold text-accent">NEW</span>}
                         </div>
                       </div>
-                      <ArrowUpRight size={16} className="text-slate-500 transition group-hover:text-white" />
+                      <ArrowUpRight size={16} className="shrink-0 text-zinc-600 group-hover:text-white" />
                     </a>
                   );
-                })}
-              </div>
-            )}
-          </Card>
+                })
+              )}
+            </Card>
+          </motion.section>
 
-          {/* Announcements */}
-          <Card className="p-6">
-            <h2 className="section-title mb-4">
-              <Bell size={18} className="text-amber-300" /> Latest announcements
-            </h2>
-            {loading ? (
-              <div className="space-y-3">
-                {[0, 1].map((i) => <Skeleton key={i} className="h-16" />)}
-              </div>
-            ) : announcements.length === 0 ? (
-              <p className="text-sm text-slate-400">📭 No announcements right now.</p>
-            ) : (
-              <div className="space-y-3">
-                {announcements.map((n, i) => (
-                  <div
-                    key={n.id || i}
-                    className={`relative overflow-hidden rounded-2xl border p-4 ${
-                      n.priority ? "border-rose-400/25 bg-rose-500/[0.08]" : "border-white/[0.06] bg-white/[0.03]"
-                    }`}
-                  >
-                    {n.priority && <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-400 to-fuchsia-500" />}
-                    <div className="flex items-start gap-2 text-sm text-slate-200">
-                      {n.priority && <Sparkles size={16} className="mt-0.5 shrink-0 text-rose-300" />}
-                      {n.message}
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                      <Clock size={12} /> {timeAgo(n.createdAt)} · {n.audience}
+          {/* ===== Announcements ===== */}
+          {otherNews.length > 0 && (
+            <motion.section variants={item} initial="hidden" animate="show">
+              <SectionHead title="Announcements" />
+              <Card variants={null} className="divide-y divide-white/[0.06] p-0">
+                {otherNews.map((n) => (
+                  <div key={n.id} className="p-4">
+                    <div className="text-sm text-zinc-200">{n.message}</div>
+                    <div className="mt-1 text-xs text-zinc-500">
+                      {n.createdBy} · {timeAgo(n.createdAt)}
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
-          </Card>
+              </Card>
+            </motion.section>
+          )}
+
+          {/* ===== Next exam (when set) ===== */}
+          {!loading && !nextExam && (
+            <motion.div variants={item} initial="hidden" animate="show">
+              <Link to="/progress" className="flex items-center gap-3 rounded-2xl border border-dashed border-white/15 p-4 text-sm text-zinc-400 hover:border-white/30 hover:text-white">
+                <CalendarClock size={18} /> Add your exam dates to get a countdown
+                <ChevronRight size={16} className="ml-auto" />
+              </Link>
+            </motion.div>
+          )}
         </div>
 
-        {/* ===== RIGHT COLUMN ===== */}
-        <div className="space-y-6">
-          <Card className="p-6" glow="rgba(240,171,252,0.14)">
-            <h3 className="section-title mb-5">
-              <Timer size={18} className="text-fuchsia-300" /> Focus zone
-            </h3>
-            <FocusFace size={180} />
+        {/* ===== Side column (desktop) ===== */}
+        <div className="hidden space-y-6 lg:block">
+          <Card className="p-5">
+            <h3 className="mb-4 font-display text-base font-bold text-white">Focus timer</h3>
+            <FocusFace size={170} />
           </Card>
 
-          <Card className="p-6">
-            <h3 className="section-title mb-4">
-              <Gauge size={18} className="text-emerald-300" /> Exam readiness
-            </h3>
-            <ProgressRing value={readiness} label={`${progressData?.confidence || "Medium"} confidence`} from="#34d399" to="#22d3ee" />
-            {upcoming.length > 0 && (
-              <div className="mt-6 space-y-2">
-                {upcoming.slice(0, 3).map((x) => {
-                  const d = daysUntil(x.examDate);
+          {nearby.length > 0 && (
+            <section>
+              <SectionHead title="Around you" to="/leaderboard" linkLabel="Ranks" />
+              <Card variants={null} className="divide-y divide-white/[0.06] p-0">
+                {nearby.map((p) => {
+                  const r = game.leaders.indexOf(p) + 1;
+                  const me = p.name === name;
                   return (
-                    <button
-                      key={x._id}
-                      onClick={() => navigate("/progress")}
-                      className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/5"
-                    >
-                      <div className="grid h-11 w-12 place-items-center rounded-xl border border-white/10 bg-white/5 text-center leading-none">
-                        <div>
-                          <div className="font-display text-sm font-bold text-white">{shortDate(x.examDate).split(" ")[1]}</div>
-                          <div className="text-[9px] uppercase text-slate-400">{shortDate(x.examDate).split(" ")[0]}</div>
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold text-white">{x.subject}</div>
-                        <div className={`text-xs ${confidenceOf(x.confidence).text}`}>{x.confidence} confidence</div>
-                      </div>
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${d <= 5 ? "bg-rose-500/15 text-rose-200" : "bg-white/10 text-slate-300"}`}>
-                        {d}d
+                    <div key={p.name} className={`flex items-center gap-3 px-4 py-3 ${me ? "bg-accent/[0.06]" : ""}`}>
+                      <span className="w-6 font-display text-sm font-bold text-zinc-500">#{r}</span>
+                      <Avatar name={p.name} size={28} />
+                      <span className={`flex-1 truncate text-sm ${me ? "font-semibold text-accent" : "text-white"}`}>
+                        {me ? "You" : p.name}
                       </span>
-                    </button>
+                      <span className="text-sm font-bold text-zinc-300">{p.score}</span>
+                    </div>
                   );
                 })}
-              </div>
-            )}
-          </Card>
-
-          <Card className="p-6" glow="rgba(34,211,238,0.12)">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="section-title">
-                <Trophy size={18} className="text-amber-300" /> Climb the ranks
-              </h3>
-              <Link to="/leaderboard" className="text-xs font-semibold text-violet-300 hover:text-violet-200">
-                Full board
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {nearby.map((p) => {
-                const r = game.leaders.indexOf(p) + 1;
-                const isMe = p.name === name;
-                return (
-                  <div
-                    key={p.name}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2 ${isMe ? "border border-violet-400/30 bg-violet-500/10" : ""}`}
-                  >
-                    <span className="w-5 text-center font-display text-sm font-bold text-slate-400">{["🥇", "🥈", "🥉"][r - 1] || r}</span>
-                    <Avatar name={p.name} size={30} />
-                    <span className="flex-1 truncate text-sm font-medium text-white">
-                      {p.name} {isMe && <span className="text-xs text-violet-300">(you)</span>}
-                    </span>
-                    <span className="text-sm font-bold text-violet-200">{p.score}</span>
-                  </div>
-                );
-              })}
-              {nearby.length === 0 && <p className="text-sm text-slate-400">No rankings yet.</p>}
-            </div>
-          </Card>
-
-          <Card className="p-6" glow="rgba(251,191,36,0.12)">
-            <div className="flex items-start gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-300 to-orange-500">
-                <Lightbulb size={18} className="text-ink-950" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-widest text-amber-200/80">Tip of the day</div>
-                <p className="mt-1 text-sm leading-relaxed text-slate-300">{tipOfTheDay()}</p>
-              </div>
-            </div>
-          </Card>
+              </Card>
+            </section>
+          )}
         </div>
       </div>
     </motion.div>

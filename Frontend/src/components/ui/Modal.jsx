@@ -33,11 +33,11 @@ export default function Modal({ open, onClose, title, subtitle, children, width 
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 {title && <h2 className="text-xl font-bold text-white">{title}</h2>}
-                {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+                {subtitle && <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>}
               </div>
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-white/10 hover:text-white"
                 aria-label="Close"
               >
                 <X size={18} />

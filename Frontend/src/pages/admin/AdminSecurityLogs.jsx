@@ -52,22 +52,22 @@ export default function AdminSecurityLogs() {
 
   const day = logs.filter((l) => Date.now() - new Date(l.createdAt) <= RANGES["24h"]);
   const tiles = [
-    { label: "Total events", value: logs.length, icon: Activity, g: "from-cyan-400 to-blue-600" },
-    { label: "Failed logins (24h)", value: day.filter((l) => l.eventType === "Login Failure").length, icon: AlertTriangle, g: "from-rose-400 to-pink-600" },
-    { label: "Successful logins (24h)", value: day.filter((l) => l.eventType === "Login Success").length, icon: LogIn, g: "from-emerald-400 to-teal-600" },
-    { label: "Unique IPs", value: new Set(logs.map((l) => l.ipAddress)).size, icon: Globe, g: "from-violet-500 to-fuchsia-600" },
+    { label: "Total events", value: logs.length, icon: Activity, g: "bg-white/[0.06]" },
+    { label: "Failed logins (24h)", value: day.filter((l) => l.eventType === "Login Failure").length, icon: AlertTriangle, g: "bg-white/[0.06]" },
+    { label: "Successful logins (24h)", value: day.filter((l) => l.eventType === "Login Success").length, icon: LogIn, g: "bg-white/[0.06]" },
+    { label: "Unique IPs", value: new Set(logs.map((l) => l.ipAddress)).size, icon: Globe, g: "bg-white/[0.06]" },
   ];
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader icon={Shield} eyebrow="Audit trail" title="Security Logs" subtitle="Every login, reset and admin action — in one place." gradient="from-cyan-400 to-blue-600" />
+      <PageHeader icon={Shield} eyebrow="Audit trail" title="Security Logs" subtitle="Every login, reset and admin action — in one place." />
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {tiles.map((t) => (
-          <Card key={t.label} className="p-5" glow="rgba(34,211,238,0.12)">
+          <Card key={t.label} className="p-5">
             <div className="flex items-start justify-between">
-              <div className="text-sm text-slate-400">{t.label}</div>
-              <div className={`grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br ${t.g}`}>
+              <div className="text-sm text-zinc-400">{t.label}</div>
+              <div className={`grid h-9 w-9 place-items-center rounded-xl ${t.g}`}>
                 <t.icon size={16} className="text-white" />
               </div>
             </div>
@@ -83,7 +83,7 @@ export default function AdminSecurityLogs() {
             {EVENTS.map((e) => <option key={e}>{e}</option>)}
           </select>
           <div className="relative flex-1">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} className="input !py-2 pl-9" placeholder="Search by name, email or IP…" />
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function AdminSecurityLogs() {
                     <motion.tr key={r._id || i} variants={item}>
                       <td>
                         <div className="text-white">{timeAgo(r.createdAt)}</div>
-                        <div className="text-xs text-slate-500">{new Date(r.createdAt).toLocaleString()}</div>
+                        <div className="text-xs text-zinc-500">{new Date(r.createdAt).toLocaleString()}</div>
                       </td>
                       <td>
                         <span className={`chip ${st.chip}`}>
@@ -124,13 +124,13 @@ export default function AdminSecurityLogs() {
                         <div className="flex items-center gap-2.5">
                           <Avatar name={r.userId?.name || "?"} size={28} />
                           <div>
-                            <div className="text-slate-200">{r.userId?.name || "Unknown"}</div>
-                            <div className="text-xs text-slate-500">{r.userId?.email}</div>
+                            <div className="text-zinc-200">{r.userId?.name || "Unknown"}</div>
+                            <div className="text-xs text-zinc-500">{r.userId?.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="font-mono text-xs text-slate-300">{r.ipAddress}</td>
-                      <td className="text-slate-400">{r.details}</td>
+                      <td className="font-mono text-xs text-zinc-300">{r.ipAddress}</td>
+                      <td className="text-zinc-400">{r.details}</td>
                     </motion.tr>
                   );
                 })}

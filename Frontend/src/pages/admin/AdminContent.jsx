@@ -93,13 +93,13 @@ export default function AdminContent() {
         eyebrow="Moderation"
         title="Content Review"
         subtitle="Approve study materials before they reach students."
-        gradient="from-amber-300 to-orange-600"
+       
       />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <Segmented value={filter} onChange={setFilter} size="sm" options={FILTERS.map((f) => ({ value: f, label: f, count: counts[f] }))} />
         <div className="relative flex-1 lg:max-w-sm lg:ml-auto">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} className="input pl-10" placeholder="Search by title, student name, or ID" />
         </div>
       </div>
@@ -127,24 +127,24 @@ export default function AdminContent() {
                       exit={{ opacity: 0, x: 20, height: 0 }}
                       onClick={() => select(r)}
                       className={`flex w-full items-center gap-4 rounded-2xl px-4 py-3 text-left transition ${
-                        active ? "border border-cyan-400/30 bg-cyan-500/10" : "border border-transparent hover:bg-white/[0.04]"
+ active ? "border border-accent/30 bg-accent/10" : "border border-transparent hover:bg-white/[0.04]"
                       }`}
                     >
-                      <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${t.gradient}`}>
+                      <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${t.gradient}`}>
                         <t.icon size={18} className="text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-semibold text-white">{r.title}</div>
-                        <div className="truncate text-xs text-slate-400">
+                        <div className="truncate text-xs text-zinc-400">
                           {r.uploadedBy || "Unknown User"} · {r.branch || "N/A"} · {timeAgo(r.createdAt || r.uploadedAt)}
                         </div>
                       </div>
                       {r.reports?.length > 0 && (
-                        <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-orange-300" title="Reports">
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-accent" title="Reports">
                           <Flag size={12} /> {r.reports.length}
                         </span>
                       )}
-                      <span className="flex shrink-0 items-center gap-1 text-xs text-slate-500" title="Upvotes">
+                      <span className="flex shrink-0 items-center gap-1 text-xs text-zinc-500" title="Upvotes">
                         <ThumbsUp size={12} /> {r.upvoteCount || 0}
                       </span>
                       {st && <span className={`chip hidden shrink-0 sm:inline-flex ${st.chip}`}>{st.label}</span>}
@@ -169,7 +169,7 @@ export default function AdminContent() {
                         href={selected.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className={`group relative grid h-44 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br ${t.gradient}`}
+                        className={`group relative grid h-44 place-items-center overflow-hidden rounded-2xl ${t.gradient}`}
                       >
                         <div className="bg-grid absolute inset-0 opacity-30" />
                         <div className="relative text-center text-white">
@@ -186,32 +186,32 @@ export default function AdminContent() {
                   <div className="mt-3 flex items-center gap-3">
                     <Avatar name={selected.uploadedBy || "?"} size={32} />
                     <div className="text-sm">
-                      <div className="font-medium text-slate-200">{selected.uploadedBy || "Unknown User"}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="font-medium text-zinc-200">{selected.uploadedBy || "Unknown User"}</div>
+                      <div className="text-xs text-zinc-500">
                         {selected.branch} · {typeOf(selected.type).label} · {timeAgo(selected.createdAt || selected.uploadedAt)}
                       </div>
                     </div>
                     {statusStyles[selected.status] && <span className={`chip ml-auto ${statusStyles[selected.status].chip}`}>{statusStyles[selected.status].label}</span>}
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+                  <div className="mt-4 flex items-center gap-2 text-xs text-zinc-400">
                     <ThumbsUp size={13} /> {selected.upvoteCount || 0} classmates found this helpful
                   </div>
 
                   {selected.reports?.length > 0 && (
-                    <div className="mt-4 rounded-2xl border border-orange-400/25 bg-orange-500/[0.07] p-3">
-                      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-orange-200">
+                    <div className="mt-4 rounded-2xl border border-accent/25 bg-accent/[0.07] p-3">
+                      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-accent">
                         <Flag size={12} /> Reported {selected.reports.length} time{selected.reports.length === 1 ? "" : "s"}
                       </div>
-                      <ul className="space-y-1 text-xs text-slate-300">
+                      <ul className="space-y-1 text-xs text-zinc-300">
                         {selected.reports.map((rep, i) => (
                           <li key={i} className="flex justify-between gap-2">
                             <span>• {rep.reason}</span>
-                            <span className="shrink-0 text-slate-500">{timeAgo(rep.createdAt)}</span>
+                            <span className="shrink-0 text-zinc-500">{timeAgo(rep.createdAt)}</span>
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-2 text-[11px] text-slate-500">Approving clears the reports and puts it back online.</p>
+                      <p className="mt-2 text-[11px] text-zinc-500">Approving clears the reports and puts it back online.</p>
                     </div>
                   )}
 
@@ -224,7 +224,7 @@ export default function AdminContent() {
                     <button disabled={saving} onClick={() => handleUpdateStatus("approved")} className="btn !px-2 border border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25">
                       <CheckCircle2 size={16} /> Approve
                     </button>
-                    <button disabled={saving} onClick={() => handleUpdateStatus("revision")} className="btn !px-2 border border-sky-400/30 bg-sky-500/15 text-sky-100 hover:bg-sky-500/25">
+                    <button disabled={saving} onClick={() => handleUpdateStatus("revision")} className="btn !px-2 border border-accent/30 bg-accent/15 text-accent hover:bg-accent/25">
                       <RotateCcw size={16} /> Revise
                     </button>
                     <button disabled={saving} onClick={() => handleUpdateStatus("rejected")} className="btn !px-2 border border-rose-400/30 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25">
@@ -234,11 +234,11 @@ export default function AdminContent() {
                 </motion.div>
               ) : (
                 <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-16 text-center">
-                  <div className="mx-auto grid h-14 w-14 animate-float place-items-center rounded-2xl bg-white/[0.05] text-cyan-300">
+                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white/[0.05] text-accent">
                     <FolderOpenDot size={26} />
                   </div>
                   <div className="mt-4 font-display font-semibold text-white">Select a submission</div>
-                  <p className="mt-1 text-sm text-slate-400">Pick an item on the left to preview and review it.</p>
+                  <p className="mt-1 text-sm text-zinc-400">Pick an item on the left to preview and review it.</p>
                 </motion.div>
               )}
             </AnimatePresence>
