@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import API from "../api";
 
 // Mirrors Backend/config/community.js; the backend's values win once loaded
-const DEFAULTS = { emailDomain: "", rollFormats: ["AM.EN.U4EEE24###"], branches: ["EEE"], trustedXp: 150, approveUpvotes: 5, hideReports: 5, maxUploadMb: 5, fileSemesters: [7] };
+const DEFAULTS = { emailDomain: "", rollFormats: ["AM.EN.U4EEE24###"], branches: ["EEE"], trustedXp: 150, approveUpvotes: 5, hideReports: 5, maxUploadMb: 5, fileSemesters: [6, 7] };
 let cache = null;
 
 // Community rules: who can sign up and when uploads are auto-approved / hidden

@@ -66,7 +66,9 @@ export const SEMESTERS = [1, 2, 3, 4, 5, 6, 7];
 // e.g. 2024 batch in Nov 2026 -> 3rd year, odd -> S5
 export function currentSemester(batch, now = new Date()) {
   if (!batch) return 1;
-  const year = now.getFullYear() - batch + (now.getMonth() >= 6 ? 1 : 0);
-  const sem = now.getMonth() >= 6 ? year * 2 - 1 : year * 2;
+  // odd semesters run June–October, even ones November–May (e.g. the 2024 batch is in S6 from Nov 2026)
+  const m = now.getMonth(); // 0 = January
+  const yearIndex = now.getFullYear() - batch - (m >= 5 ? 0 : 1); // 0 in the first academic year
+  const sem = m >= 5 && m <= 9 ? yearIndex * 2 + 1 : yearIndex * 2 + 2;
   return Math.min(7, Math.max(1, sem));
 }
