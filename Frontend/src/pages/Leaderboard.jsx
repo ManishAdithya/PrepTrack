@@ -11,6 +11,7 @@ import Skeleton from "../components/ui/Skeleton.jsx";
 import { container, item } from "../components/ui/motion.js";
 import { levelFor } from "../utils/gamification.js";
 import { useRules } from "../utils/rules.js";
+import HideNameToggle from "../components/HideNameToggle.jsx";
 
 const EARN = [
   ["PYQs", 15],
@@ -24,12 +25,18 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const [meHidden, setMeHidden] = useState(false);
+
+  const load = () =>
     API.get("/leaderboard")
       .then(({ data }) => setList(data.sort((a, b) => b.score - a.score)))
       .catch(() => setError("Failed to load leaderboard."))
       .finally(() => setLoading(false));
-  }, []);
+
+  useEffect(() => {
+    load();
+    API.get("/auth/me").then(({ data }) => setMeHidden(!!data.hideFromLeaderboard)).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const meIdx = list.findIndex((l) => l.isMe);
   const me = list[meIdx];
@@ -47,15 +54,12 @@ export default function Leaderboard() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader
-        title="Ranks"
-        subtitle="Earn XP when your uploads are approved."
-        actions={
-          <Link to="/profile#privacy" className="text-xs font-semibold text-zinc-400 hover:text-white">
-            Hide my name
-          </Link>
-        }
-      />
+      <PageHeader title="Ranks" subtitle="Earn XP when your uploads are approved." />
+
+      {/* Privacy: one tap hides your name from classmates, right here */}
+      <motion.div variants={item}>
+        <HideNameToggle onChange={(h) => { setMeHidden(h); load(); }} />
+      </motion.div>
 
       {/* Your position */}
       {me && (
@@ -110,6 +114,7 @@ export default function Leaderboard() {
                       <div className={`truncate text-sm font-semibold ${isMe ? "text-accent" : r.hidden ? "italic text-zinc-500" : "text-white"}`}>
                         {r.name}
                         {isMe && " (you)"}
+                        {isMe && meHidden && <span className="ml-1.5 text-xs font-normal text-zinc-500">· hidden from classmates</span>}
                       </div>
                       <div className="text-xs text-zinc-500">
                         Lv {levelFor(r.score).level} · {r.contributions ?? 0} uploads

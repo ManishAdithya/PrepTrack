@@ -243,13 +243,6 @@ async function seed(db) {
   const logins = [];
   for (const Y of CLASSES) logins.push(...(await seedBatch(db, Y, hash)));
 
-  // ---------- branches (just the list shown on the Branches page) ----------
-  const BRANCHES = [["Electrical & Electronics Engineering", "EEE"], ["Computer Science & Engineering", "CSE"], ["Electronics & Communication", "ECE"], ["Mechanical Engineering", "MECH"], ["Civil Engineering", "CIVIL"], ["AI & Machine Learning", "AIML"]];
-  for (const [branchName, branchCode] of BRANCHES) {
-    if (!(await db.collection("branches").findOne({ branchCode })))
-      await db.collection("branches").insertOne({ branchName, branchCode, createdAt: at(-300), updatedAt: at(-300), seed: true, __v: 0 });
-  }
-
   console.log(`\n  Try logging in as (password: ${DEMO_PASSWORD}):\n` + logins.map((l) => "    " + l).join("\n"));
 }
 

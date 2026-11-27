@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Search, Flame, FlaskConical } from "lucide-react";
-import { useAuth } from "../context/AuthContext.jsx";
 import { useGame } from "../context/GameContext.jsx";
 import { DEMO_MODE } from "../api";
 import NotificationBell from "./NotificationBell.jsx";
@@ -37,7 +36,6 @@ export function SearchButton({ onOpen, label = "Search notes, PYQs, pages…" })
 }
 
 export default function Topbar({ onOpenSearch }) {
-  const { user } = useAuth();
   const { streak } = useGame();
 
   return (

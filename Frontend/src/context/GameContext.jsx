@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import API from "../api";
-import { useAuth } from "./AuthContext.jsx";
 import { useToast } from "../components/ui/Toast.jsx";
 import { bigCelebrate } from "../utils/confetti.js";
 import { levelFor, useStreak } from "../utils/gamification.js";
@@ -9,7 +8,6 @@ import { levelFor, useStreak } from "../utils/gamification.js";
 const GameCtx = createContext(null);
 
 export function GameProvider({ children }) {
-  const { user } = useAuth();
   const toast = useToast();
   const streak = useStreak();
   const [leaders, setLeaders] = useState([]);

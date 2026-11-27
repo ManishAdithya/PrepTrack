@@ -1,6 +1,5 @@
 import Progress from "../models/Progress.js";
 import Result from "../models/Result.js";
-import { idsInScope } from "../utils/scope.js";
 import { computeReadiness } from "../utils/readiness.js";
 import { refreshReadiness } from "./resultController.js";
 
@@ -40,19 +39,6 @@ export const getUserProgress = async (req, res) => {
   } catch (err) {
     console.error("Get User Progress Error:", err);
     res.status(500).json({ message: "Error fetching progress" });
-  }
-};
-
-// GET /api/progress/all → Admin only
-export const getAllProgress = async (req, res) => {
-  try {
-    // A CR sees only the progress of students in their own batch
-    const ids = (await idsInScope(req.user)).map(String);
-    const all = await Progress.find({ userId: { $in: ids } });
-    res.status(200).json(all);
-  } catch (err) {
-    console.error("Get All Progress Error:", err);
-    res.status(500).json({ message: "Error fetching all progress" });
   }
 };
 

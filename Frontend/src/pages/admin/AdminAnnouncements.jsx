@@ -12,22 +12,16 @@ import { celebrate } from "../../utils/confetti.js";
 import { readJSON, writeJSON } from "../../utils/gamification.js";
 import { timeAgo } from "../../utils/ui.js";
 
-// Announcements reach only the CR's own branch + batch (the audience is just a label)
-const FALLBACK_AUDIENCES = [
-  { value: "CSE", label: "Computer Science" },
-  { value: "ECE", label: "Electronics" },
-  { value: "MECH", label: "Mechanical" },
-  { value: "CIVIL", label: "Civil" },
-];
+// Announcements always go to the CR's whole class (one class, one branch)
+const AUDIENCE = "Whole class";
+
 
 export default function AdminAnnouncements() {
   const toast = useToast();
   const draft = readJSON("pt_announcement_draft", null);
 
   const [announcements, setAnnouncements] = useState([]);
-  const [audiences, setAudiences] = useState(FALLBACK_AUDIENCES);
   const [message, setMessage] = useState(draft?.message || "");
-  const [audience, setAudience] = useState(draft?.audience || "All Users");
   const [priority, setPriority] = useState(draft?.priority || false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -48,9 +42,6 @@ export default function AdminAnnouncements() {
       }
     };
     fetchAnnouncements();
-    API.get("/branch")
-      .then(({ data }) => data.length && setAudiences(data.map((b) => ({ value: b.branchCode, label: b.branchName }))))
-      .catch(() => {});
   }, []);
 
   // Publish new announcement
@@ -61,14 +52,13 @@ export default function AdminAnnouncements() {
     }
     setPublishing(true);
     try {
-      const { data } = await API.post("/notification/create", { message, audience, priority });
+      const { data } = await API.post("/notification/create", { message, audience: AUDIENCE, priority });
       setAnnouncements([data, ...announcements]); // Add new one at top
       setMessage("");
       setPriority(false);
-      setAudience("All Users");
       writeJSON("pt_announcement_draft", null);
       celebrate({ particleCount: 60 });
-      toast({ title: "Announcement published", description: "Sent to every student in your batch." });
+      toast({ title: "Announcement published", description: "Sent to everyone in your class." });
     } catch (err) {
       console.error("Error publishing announcement:", err);
       toast({ type: "error", title: "Failed to publish announcement" });
@@ -78,16 +68,16 @@ export default function AdminAnnouncements() {
   };
 
   const saveDraft = () => {
-    writeJSON("pt_announcement_draft", { message, audience, priority });
+    writeJSON("pt_announcement_draft", { message, priority });
     toast({ type: "info", title: "Draft saved on this device" });
   };
 
   const filtered = announcements.filter((a) => a.message.toLowerCase().includes(search.toLowerCase()));
-  const audienceLabel = (v) => (v === "All Users" ? "All Users" : audiences.find((a) => a.value === v)?.label || v);
+  const audienceLabel = () => AUDIENCE;
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader icon={Megaphone} eyebrow="Broadcast" title="Announcements" subtitle="Share news, deadlines and exam updates with students." />
+      <PageHeader title="Announcements" subtitle="Share news, deadlines and exam updates with the whole class." />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {/* Composer */}
@@ -102,23 +92,6 @@ export default function AdminAnnouncements() {
           />
           <div className="mt-1 text-right text-[11px] text-zinc-500">{message.length}/500</div>
 
-          <div className="mt-3">
-            <label className="label flex items-center gap-1.5"><Users size={12} /> Audience</label>
-            <div className="flex flex-wrap gap-2">
-              {[{ value: "All Users", label: "All Users" }, ...audiences].map((a) => (
-                <button
-                  key={a.value}
-                  type="button"
-                  onClick={() => setAudience(a.value)}
-                  className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
- audience === a.value ? "border-accent/60 bg-accent/20 text-white shadow-glow" : "border-white/10 bg-white/[0.04] text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <button type="button" onClick={() => setPriority((p) => !p)} className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 text-left transition hover:bg-white/[0.05]">
             <span className={`relative h-6 w-11 rounded-full border transition ${priority ? "border-rose-400/40 bg-rose-500/40" : "border-white/10 bg-white/10"}`}>
@@ -139,7 +112,7 @@ export default function AdminAnnouncements() {
                 {priority && <Sparkles size={16} className="mt-0.5 shrink-0 text-rose-300" />}
                 {message || <span className="text-zinc-500">Your message will appear here…</span>}
               </div>
-              <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500"><Clock size={12} /> just now · {audienceLabel(audience)}</div>
+              <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500"><Clock size={12} /> just now · {AUDIENCE}</div>
             </div>
           </div>
 

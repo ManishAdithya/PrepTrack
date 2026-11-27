@@ -24,9 +24,7 @@ import AdminLayout from "./layouts/AdminLayout.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminLeaderboard from "./pages/admin/AdminLeaderboard.jsx";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements.jsx";
-import AdminSecurityLogs from "./pages/admin/AdminSecurityLogs.jsx";
 import AdminContent from "./pages/admin/AdminContent.jsx";
-import AdminBranches from "./pages/admin/AdminBranches.jsx";
 import AdminStudents from "./pages/admin/AdminStudents.jsx";
 
 export default function App() {
@@ -65,8 +63,6 @@ export default function App() {
                 <Route path="/admin/students" element={<AdminStudents />} />
                 <Route path="/admin/leaderboard" element={<AdminLeaderboard />} />
                 <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-                <Route path="/admin/security" element={<AdminSecurityLogs />} />
-                <Route path="/admin/branches" element={<AdminBranches />} />
               </Route>
             </Route>
 

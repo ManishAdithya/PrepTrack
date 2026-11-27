@@ -316,7 +316,7 @@ export default function Profile() {
       </div>
 
       {/* Account: leaderboard privacy, password, CR portal, log out */}
-      <AccountSettings profile={profile} onChange={setProfile} />
+      <AccountSettings onChange={(changes) => setProfile((p) => ({ ...p, ...changes }))} />
     </motion.div>
   );
 }

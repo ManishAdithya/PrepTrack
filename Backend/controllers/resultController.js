@@ -1,6 +1,5 @@
 import Result from "../models/Result.js";
 import Progress from "../models/Progress.js";
-import { userInScope } from "../utils/scope.js";
 import { computeReadiness, storedSummary } from "../utils/readiness.js";
 
 // Recalculate a student's readiness from all their results and save the summary
@@ -57,23 +56,6 @@ export const uploadResult = async (req, res) => {
   } catch (err) {
     console.error("Upload Result Error:", err);
     res.status(500).json({ message: "Error uploading result" });
-  }
-};
-
-// GET /api/result/:studentId → Admin fetches results for a specific student
-export const getResults = async (req, res) => {
-  try {
-    // A CR can only open results of a student in their own batch
-    if (!(await userInScope(req.params.studentId, req.user))) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-    const results = await Result.find({ studentId: req.params.studentId }).sort({
-      uploadedAt: 1,
-    });
-    res.json(results);
-  } catch (err) {
-    console.error("Get Results Error:", err);
-    res.status(500).json({ message: err.message });
   }
 };
 

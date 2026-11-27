@@ -23,7 +23,6 @@ import EmptyState from "../../components/ui/EmptyState.jsx";
 import Skeleton from "../../components/ui/Skeleton.jsx";
 import { container } from "../../components/ui/motion.js";
 import { greeting } from "../../utils/gamification.js";
-import { eventStyles, timeAgo } from "../../utils/ui.js";
 
 function ChartTip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -39,19 +38,14 @@ function ChartTip({ active, payload }) {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
-  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [{ data }, logRes] = await Promise.all([
-          API.get("/admin/stats"),
-          API.get("/security-logs").catch(() => ({ data: [] })),
-        ]);
+        const { data } = await API.get("/admin/stats");
         setStats(data);
-        setLogs(logRes.data.slice(0, 6));
       } catch (err) {
         console.error("Error fetching admin stats:", err);
         setError("Unable to load dashboard data.");
@@ -121,7 +115,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:max-w-2xl">
         <Card className="p-6">
           <h2 className="section-title mb-2">Content approval status</h2>
           <div className="relative h-56">
@@ -164,38 +158,6 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        <Card className="p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="section-title">
-              <Activity size={18} className="text-accent" /> Recent activity
-            </h2>
-            <Link to="/admin/security" className="text-xs font-semibold text-accent hover:text-accent">View all</Link>
-          </div>
-          {logs.length === 0 ? (
-            <p className="text-sm text-zinc-400">No recent events.</p>
-          ) : (
-            <div className="relative space-y-4 before:absolute before:bottom-2 before:left-[15px] before:top-2 before:w-px before:bg-white/10">
-              {logs.map((l, i) => {
-                const st = eventStyles[l.eventType] || eventStyles["Admin Action"];
-                return (
-                  <motion.div key={l._id || i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.06 }} className="relative flex items-start gap-3">
-                    <span className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border ${st.chip}`}>
-                      <st.icon size={14} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm text-zinc-200">
-                        <span className="font-semibold text-white">{l.userId?.name || "Unknown user"}</span> · {l.eventType}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {l.details} · {timeAgo(l.createdAt)}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
       </div>
     </motion.div>
   );

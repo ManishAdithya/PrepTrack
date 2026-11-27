@@ -1,6 +1,7 @@
 import React from "react";
 import { BookOpen, TrendingUp, MessagesSquare, Trophy } from "lucide-react";
 import { Brand } from "./NavSidebar.jsx";
+import AuroraBackground from "./AuroraBackground.jsx";
 
 const features = [
   { icon: BookOpen, text: "Notes, slides and PYQs from your class" },
@@ -12,7 +13,8 @@ const features = [
 // Frame for the login and signup pages: a bold statement on desktop, just the form on phones
 export default function AuthShell({ children }) {
   return (
-    <div className="min-h-screen bg-ink-950 text-zinc-100">
+    <div className="relative min-h-screen text-zinc-100">
+      <AuroraBackground />
       <div className="mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-4 py-8 lg:grid-cols-2 lg:px-8">
         <div className="hidden lg:block">
           <Brand subtitle="EEE · Amrita" />

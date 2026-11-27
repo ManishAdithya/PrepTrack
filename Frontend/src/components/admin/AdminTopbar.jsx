@@ -13,18 +13,18 @@ export default function AdminTopbar({ title = "CR portal", onOpenSearch }) {
           <Brand compact />
           <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">CR</span>
         </div>
-        <div className="hidden min-w-0 items-center gap-2 text-sm md:flex">
+        <div className="hidden min-w-0 items-center gap-2 whitespace-nowrap text-sm lg:flex">
           <span className="text-zinc-500">CR portal</span>
           <span className="text-zinc-600">/</span>
           <span className="truncate font-semibold text-white">{title}</span>
         </div>
-        <div className="mx-auto hidden w-full max-w-sm lg:block">
+        <div className="mx-auto hidden w-full max-w-sm xl:block">
           <SearchButton onOpen={onOpenSearch} label="Jump to a page…" />
         </div>
         <div className="ml-auto flex items-center gap-1.5 md:gap-2">
           <DemoBadge />
           {/* a CR is a student too */}
-          <Link to="/" className="btn-ghost !min-h-[36px] !px-3 !py-1.5 text-xs">
+          <Link to="/" className="btn-ghost !min-h-[36px] whitespace-nowrap !px-3 !py-1.5 text-xs">
             <GraduationCap size={15} /> <span className="hidden sm:inline">Student view</span>
             <span className="sm:hidden">Student</span>
           </Link>
