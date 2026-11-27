@@ -21,8 +21,9 @@ export function AuthProvider({ children }) {
         token: data.token,
         role: data.role || data.user?.role,
         email: data.user?.email || email,
-        name: data.name,       
+        name: data.name,
         branch: data.branch,
+        batch: data.batch,
       };
 
       setUser(u);

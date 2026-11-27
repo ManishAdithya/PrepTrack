@@ -1,10 +1,16 @@
+import mongoose from "mongoose";
 import Discussion from "../models/Discussion.js";
+import { scopeOf } from "../config/community.js";
 
-// GET all discussions
+// A discussion inside the user's own branch + batch, or null.
+// Other batches' discussions answer "not found" so their existence isn't revealed.
+const findInScope = (id, user) =>
+  mongoose.isValidObjectId(id) ? Discussion.findOne({ _id: id, ...scopeOf(user) }) : null;
+
+// GET all discussions of the user's batch
 export const getDiscussions = async (req, res) => {
   try {
-    const filter = req.user?.branch ? { branch: req.user.branch } : {};
-    const discussions = await Discussion.find(filter).sort({ createdAt: -1 });
+    const discussions = await Discussion.find(scopeOf(req.user)).sort({ createdAt: -1 });
     res.status(200).json(discussions);
   } catch (err) {
     console.error("Get Discussions Error:", err);
@@ -15,7 +21,7 @@ export const getDiscussions = async (req, res) => {
 // GET single discussion
 export const getDiscussionById = async (req, res) => {
   try {
-    const discussion = await Discussion.findById(req.params.id);
+    const discussion = await findInScope(req.params.id, req.user);
     if (!discussion) {
       return res.status(404).json({ message: "Discussion not found" });
     }
@@ -36,7 +42,7 @@ export const createDiscussion = async (req, res) => {
       body: body || "",
       tags: tags || [],
       author: req.user.name,
-      branch: req.user.branch,
+      ...scopeOf(req.user),
     });
 
     res.status(201).json(discussion);
@@ -50,9 +56,12 @@ export const createDiscussion = async (req, res) => {
 export const addComment = async (req, res) => {
   try {
     const { text } = req.body;
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Discussion not found" });
+    }
 
-    const updated = await Discussion.findByIdAndUpdate(
-      req.params.id,
+    const updated = await Discussion.findOneAndUpdate(
+      { _id: req.params.id, ...scopeOf(req.user) },
       {
         $push: {
           comments: {

@@ -4,6 +4,7 @@ const materialSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     branch: { type: String, required: true },
+    batch: { type: Number, required: true }, // only this batch can see it
 
     type: {
       type: String,

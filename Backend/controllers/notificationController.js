@@ -1,14 +1,21 @@
+import mongoose from "mongoose";
 import Notification from "../models/Notification.js";
+import { scopeOf } from "../config/community.js";
 
-// Admin creates a new announcement
+// A CR publishes an announcement. It reaches only the CR's own branch + batch,
+// whatever audience label is chosen.
 export const createNotification = async (req, res) => {
   try {
     const { message, audience, priority } = req.body;
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ message: "Announcement can't be empty" });
+    }
     const note = await Notification.create({
       message,
-      audience,
-      priority,
+      audience: audience || "All Users",
+      priority: !!priority,
       createdBy: req.user.name,
+      ...scopeOf(req.user),
     });
     res.status(201).json(note);
   } catch (err) {
@@ -17,15 +24,12 @@ export const createNotification = async (req, res) => {
   }
 };
 
-// Students get announcements
+// Students and CRs get their own batch's announcements
 export const getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
-    const userBranch = req.user.branch;
 
-    const notifications = await Notification.find({
-      $or: [{ audience: "All Users" }, { audience: userBranch }],
-    }).sort({ createdAt: -1 });
+    const notifications = await Notification.find(scopeOf(req.user)).sort({ createdAt: -1 });
 
     //"read" property for frontend use
     const formatted = notifications.map((n) => ({
@@ -35,7 +39,7 @@ export const getNotifications = async (req, res) => {
       priority: n.priority,
       createdBy: n.createdBy,
       createdAt: n.createdAt,
-      read: n.readBy.includes(userId),
+      read: n.readBy.some((id) => String(id) === String(userId)),
     }));
 
     res.status(200).json(formatted);
@@ -49,9 +53,12 @@ export const markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
 
-    const note = await Notification.findByIdAndUpdate(
-      id,
+    const note = await Notification.findOneAndUpdate(
+      { _id: id, ...scopeOf(req.user) },
       { $addToSet: { readBy: userId } },
       { new: true }
     );

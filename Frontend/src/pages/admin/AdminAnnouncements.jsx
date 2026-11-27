@@ -12,7 +12,7 @@ import { celebrate } from "../../utils/confetti.js";
 import { readJSON, writeJSON } from "../../utils/gamification.js";
 import { timeAgo } from "../../utils/ui.js";
 
-// Students see announcements whose audience is "All Users" or exactly their branch code
+// Announcements reach only the CR's own branch + batch (the audience is just a label)
 const FALLBACK_AUDIENCES = [
   { value: "CSE", label: "Computer Science" },
   { value: "ECE", label: "Electronics" },
@@ -68,7 +68,7 @@ export default function AdminAnnouncements() {
       setAudience("All Users");
       writeJSON("pt_announcement_draft", null);
       celebrate({ particleCount: 60 });
-      toast({ title: "Announcement published", description: audience === "All Users" ? "Sent to every student." : `Sent to ${audience} students.` });
+      toast({ title: "Announcement published", description: "Sent to every student in your batch." });
     } catch (err) {
       console.error("Error publishing announcement:", err);
       toast({ type: "error", title: "Failed to publish announcement" });

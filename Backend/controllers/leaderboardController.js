@@ -1,11 +1,11 @@
 import Leaderboard from "../models/Leaderboard.js";
-import User from "../models/User.js";
+import { idsInScope, userInScope } from "../utils/scope.js";
 
-// GET /api/leaderboard — For students & general users
+// GET /api/leaderboard — students see only their own batch
 export const getLeaderboard = async (req, res) => {
   try {
-    const data = await Leaderboard.find()
-      .populate("studentId", "name branch email") 
+    const data = await Leaderboard.find({ studentId: { $in: await idsInScope(req.user) } })
+      .populate("studentId", "name branch email")
       .sort({ score: -1 });
 
     // Format response for the frontend
@@ -24,20 +24,21 @@ export const getLeaderboard = async (req, res) => {
   }
 };
 
-// POST /api/leaderboard/update 
+// POST /api/leaderboard/update — a CR adjusts points of a student in their batch
 export const updateLeaderboard = async (req, res) => {
   try {
     const { studentId, points } = req.body;
+    if (!Number.isFinite(Number(points))) {
+      return res.status(400).json({ message: "Points must be a number" });
+    }
 
-    // Ensure the user exists before updating
-    const user = await User.findById(studentId);
-    if (!user) {
+    if (!(await userInScope(studentId, req.user))) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const entry = await Leaderboard.findOneAndUpdate(
       { studentId },
-      { $inc: { score: points, contributions: 1 } },
+      { $inc: { score: Number(points), contributions: 1 } },
       { upsert: true, new: true }
     ).populate("studentId", "name branch");
 
@@ -51,11 +52,11 @@ export const updateLeaderboard = async (req, res) => {
   }
 };
 
-// GET /api/leaderboard/admin — For admin dashboard
+// GET /api/leaderboard/admin — a CR's dashboard, their batch only
 export const getAdminLeaderboard = async (req, res) => {
   try {
-    const data = await Leaderboard.find()
-      .populate("studentId", "name email branch createdAt")
+    const data = await Leaderboard.find({ studentId: { $in: await idsInScope(req.user) } })
+      .populate("studentId", "name email branch batch createdAt")
       .sort({ score: -1 });
 
     res.status(200).json(data);
@@ -65,14 +66,18 @@ export const getAdminLeaderboard = async (req, res) => {
   }
 };
 
-// PUT /api/leaderboard/flag — Admin flagging users
+// PUT /api/leaderboard/flag — a CR flags a student in their batch
 export const flagUser = async (req, res) => {
   try {
     const { studentId, flagged } = req.body;
 
+    if (!(await userInScope(studentId, req.user))) {
+      return res.status(404).json({ message: "User not found in leaderboard" });
+    }
+
     const entry = await Leaderboard.findOneAndUpdate(
       { studentId },
-      { flagged },
+      { flagged: !!flagged },
       { new: true }
     );
 

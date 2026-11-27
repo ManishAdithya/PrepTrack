@@ -1,9 +1,12 @@
 import User from "../models/User.js";
 import { addSecurityLog } from "./securityLogController.js";
+import { scopeOf, MAX_CRS_PER_BATCH } from "../config/community.js";
+import { userInScope } from "../utils/scope.js";
 
+// GET /api/users/all — a CR sees the students of their own branch + batch only
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
+    const users = await User.find(scopeOf(req.user)).select("-password");
     res.status(200).json(users);
   } catch (err) {
     console.error("Get All Users Error:", err);
@@ -11,7 +14,8 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// PUT /api/users/:id/role — an admin promotes a student to admin, or steps someone down
+// PUT /api/users/:id/role — a CR makes a classmate a CR, or steps one down.
+// Only inside the CR's own batch, and at most MAX_CRS_PER_BATCH CRs per batch.
 export const setUserRole = async (req, res) => {
   try {
     const { role } = req.body;
@@ -22,12 +26,23 @@ export const setUserRole = async (req, res) => {
       return res.status(400).json({ message: "You can't change your own role." });
     }
 
-    const user = await User.findById(req.params.id);
+    // Students of other batches answer "not found"
+    const user = await userInScope(req.params.id, req.user);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.role === "admin" && role === "student") {
-      const admins = await User.countDocuments({ role: "admin" });
-      if (admins <= 1) return res.status(400).json({ message: "There must be at least one admin." });
+    if (user.role === role) {
+      const { password, ...same } = user.toObject(); // eslint-disable-line no-unused-vars
+      return res.json(same);
+    }
+
+    const crs = await User.countDocuments({ ...scopeOf(user), role: "admin" });
+    if (role === "admin" && crs >= MAX_CRS_PER_BATCH) {
+      return res.status(400).json({
+        message: `This batch already has ${MAX_CRS_PER_BATCH} CRs. Remove one before adding another.`,
+      });
+    }
+    if (role === "student" && crs <= 1) {
+      return res.status(400).json({ message: "Each batch needs at least one CR." });
     }
 
     user.role = role;
@@ -37,7 +52,7 @@ export const setUserRole = async (req, res) => {
       req.user.id,
       "Admin Action",
       req.ip,
-      `${role === "admin" ? "Promoted" : "Removed admin role from"} ${user.email}`
+      `${role === "admin" ? "Made CR:" : "Removed CR role from"} ${user.email}`
     );
 
     const { password, ...safe } = user.toObject(); // eslint-disable-line no-unused-vars

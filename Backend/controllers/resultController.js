@@ -1,5 +1,6 @@
 import Result from "../models/Result.js";
 import Progress from "../models/Progress.js";
+import { userInScope } from "../utils/scope.js";
 
 // POST /api/result/upload → Students upload exam results
 export const uploadResult = async (req, res) => {
@@ -56,6 +57,10 @@ export const uploadResult = async (req, res) => {
 // GET /api/result/:studentId → Admin fetches results for a specific student
 export const getResults = async (req, res) => {
   try {
+    // A CR can only open results of a student in their own batch
+    if (!(await userInScope(req.params.studentId, req.user))) {
+      return res.status(404).json({ message: "Student not found" });
+    }
     const results = await Result.find({ studentId: req.params.studentId }).sort({
       uploadedAt: 1,
     });

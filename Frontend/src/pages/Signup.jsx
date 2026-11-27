@@ -5,7 +5,7 @@ import { User, Mail, Hash, Lock, ArrowRight, Loader2, CheckCircle2, AlertTriangl
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../components/ui/Toast.jsx";
 import AuthShell from "../components/AuthShell.jsx";
-import { branchFromRoll, useRules } from "../utils/rules.js";
+import { branchFromRoll, batchFromRoll, batchLabel, useRules } from "../utils/rules.js";
 
 function strength(p) {
   let s = 0;
@@ -47,7 +47,8 @@ export default function Signup() {
 
   // Branch is read from the roll number; only allowed branches can join
   const branch = branchFromRoll(rollNumber);
-  const branchOk = !!branch && rules.branches.includes(branch);
+  const batch = batchFromRoll(rollNumber);
+  const branchOk = !!branch && !!batch && rules.branches.includes(branch);
   const emailOk = !rules.emailDomain || email.trim().toLowerCase().endsWith(`@${rules.emailDomain}`);
 
   const onSubmit = async (e) => {
@@ -116,7 +117,7 @@ export default function Signup() {
             <p className={`mt-1.5 flex items-center gap-1.5 text-xs ${branchOk ? "text-emerald-300" : "text-amber-200"}`}>
               {branchOk ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
               {branchOk
-                ? `Branch detected: ${branch}`
+                ? `Detected: ${batchLabel(branch, batch)} — you'll only see your batch`
                 : branch
                 ? `${branch} isn't open yet — PrepTrack is ${rules.branches.join(", ")}-only for now.`
                 : "Enter your full roll number, e.g. AM.SC.U4CSE23140"}

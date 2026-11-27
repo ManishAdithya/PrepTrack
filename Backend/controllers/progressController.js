@@ -1,4 +1,5 @@
 import Progress from "../models/Progress.js";
+import { idsInScope } from "../utils/scope.js";
 
 // POST /api/progress/update → Students update their progress
 export const updateProgress = async (req, res) => {
@@ -61,7 +62,9 @@ export const getUserProgress = async (req, res) => {
 // GET /api/progress/all → Admin only
 export const getAllProgress = async (req, res) => {
   try {
-    const all = await Progress.find();
+    // A CR sees only the progress of students in their own batch
+    const ids = (await idsInScope(req.user)).map(String);
+    const all = await Progress.find({ userId: { $in: ids } });
     res.status(200).json(all);
   } catch (err) {
     console.error("Get All Progress Error:", err);

@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { addSecurityLog } from "./securityLogController.js";
-import { getRules, branchFromRoll } from "../config/community.js";
+import { getRules, branchFromRoll, batchFromRoll } from "../config/community.js";
 
 // =============================
 // PUBLIC COMMUNITY RULES (shown on the signup and upload screens)
@@ -38,6 +38,12 @@ export const register = async (req, res) => {
       return res.status(403).json({ message: `PrepTrack is currently open to ${rules.branches.join(", ")} students only.` });
     }
 
+    // Joining batch from the roll number; students only ever see their own batch
+    const batch = batchFromRoll(rollNumber);
+    if (!batch) {
+      return res.status(400).json({ message: "That roll number doesn't look right (e.g. AM.SC.U4CSE23140)." });
+    }
+
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ message: "User already exists" });
@@ -51,6 +57,7 @@ export const register = async (req, res) => {
       email,
       rollNumber: String(rollNumber).trim().toUpperCase(),
       branch,
+      batch,
       role: "student",
       password: hashed,
     });
@@ -70,6 +77,7 @@ export const register = async (req, res) => {
         name: user.name,
         email: user.email,
         branch: user.branch,
+        batch: user.batch,
         rollNumber: user.rollNumber,
         role: user.role,
       },
@@ -110,6 +118,7 @@ export const login = async (req, res) => {
         id: user._id,
         role: user.role,
         branch: user.branch,
+        batch: user.batch || batchFromRoll(user.rollNumber),
         name: user.name,
       },
       process.env.JWT_SECRET,
@@ -120,6 +129,7 @@ export const login = async (req, res) => {
       token,
       role: user.role,
       branch: user.branch,
+      batch: user.batch || batchFromRoll(user.rollNumber),
       name: user.name,
       email: user.email,
       rollNumber: user.rollNumber,

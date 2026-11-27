@@ -1,15 +1,9 @@
-import User from "../models/User.js";
-
-// Checks the database, not just the token, so removing someone's admin role takes effect immediately
-export const adminOnly = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id).select("role");
-    if (user?.role !== "admin") {
-      return res.status(403).json({ message: "Access forbidden: Admins only" });
-    }
-    next();
-  } catch (err) {
-    console.error("Admin check error:", err);
-    res.status(500).json({ message: "Server Error" });
+// Admins are the CRs of one branch + batch. authMiddleware already loaded the role from
+// the database, so removing someone's CR role takes effect immediately.
+// What an admin can see or change is limited to their own batch inside each controller.
+export const adminOnly = (req, res, next) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ message: "Access forbidden: CRs only" });
   }
+  next();
 };

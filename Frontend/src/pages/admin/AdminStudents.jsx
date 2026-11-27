@@ -30,7 +30,7 @@ export default function AdminStudents() {
   const { user: me } = useUser();
   const toast = useToast();
 
-  // Promote a student to moderator (admin role) or step a moderator down
+  // Promote a student to CR (admin role) or step a CR down
   const changeRole = async () => {
     const role = confirmRole;
     setConfirmRole(null);
@@ -39,7 +39,7 @@ export default function AdminStudents() {
       setStudents((prev) => prev.map((u) => (u._id === data._id ? { ...u, role: data.role } : u)));
       setSelected((s) => ({ ...s, role: data.role }));
       toast({
-        title: role === "admin" ? `${data.name} is now a moderator` : `${data.name} is no longer a moderator`,
+        title: role === "admin" ? `${data.name} is now a CR` : `${data.name} is no longer a CR`,
         description: role === "admin" ? "They need to log out and back in to see the admin portal." : undefined,
       });
     } catch (err) {
@@ -103,13 +103,13 @@ export default function AdminStudents() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <PageHeader icon={Users} eyebrow="People" title="Students & Moderators" subtitle="See how every student is preparing, and choose who helps moderate." gradient="from-cyan-400 to-blue-600" />
+      <PageHeader icon={Users} eyebrow="People" title="Students & CRs" subtitle="See how every student is preparing, and pick up to 2 CRs for your batch. You only see your own batch." gradient="from-cyan-400 to-blue-600" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="p-5">
           <div className="text-sm text-slate-400">Students</div>
           <div className="mt-1 font-display text-3xl font-bold text-white"><AnimatedNumber value={learners.length} /></div>
-          <div className="text-xs text-slate-500">{students.length - learners.length} moderators</div>
+          <div className="text-xs text-slate-500">{students.length - learners.length} CRs</div>
         </Card>
         <Card className="p-5">
           <div className="text-sm text-slate-400">Average readiness</div>
@@ -164,7 +164,7 @@ export default function AdminStudents() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 truncate font-semibold text-white">
                         {s.name}
-                        {s.role === "admin" && <ShieldCheck size={13} className="shrink-0 text-cyan-300" aria-label="Moderator" />}
+                        {s.role === "admin" && <ShieldCheck size={13} className="shrink-0 text-cyan-300" aria-label="CR" />}
                       </div>
                       <div className="text-xs text-slate-500">{s.branch || "N/A"}</div>
                     </div>
@@ -197,7 +197,7 @@ export default function AdminStudents() {
                       {selected.name}
                       {selected.role === "admin" && (
                         <span className="chip !border-cyan-400/30 !bg-cyan-400/10 !text-cyan-200">
-                          <ShieldCheck size={12} /> Moderator
+                          <ShieldCheck size={12} /> CR
                         </span>
                       )}
                     </div>
@@ -210,11 +210,11 @@ export default function AdminStudents() {
                   {selected._id !== me?._id &&
                     (selected.role === "admin" ? (
                       <button onClick={() => setConfirmRole("student")} className="btn-danger shrink-0">
-                        <ShieldOff size={15} /> Remove moderator
+                        <ShieldOff size={15} /> Remove CR
                       </button>
                     ) : (
                       <button onClick={() => setConfirmRole("admin")} className="btn-ghost shrink-0">
-                        <ShieldCheck size={15} /> Make moderator
+                        <ShieldCheck size={15} /> Make CR
                       </button>
                     ))}
                 </div>
@@ -283,17 +283,17 @@ export default function AdminStudents() {
         open={!!confirmRole}
         onClose={() => setConfirmRole(null)}
         width="max-w-md"
-        title={confirmRole === "admin" ? `Make ${selected?.name} a moderator?` : `Remove ${selected?.name} as moderator?`}
+        title={confirmRole === "admin" ? `Make ${selected?.name} a CR?` : `Remove ${selected?.name} as CR?`}
         subtitle={
           confirmRole === "admin"
-            ? "Moderators can approve or reject uploads, publish announcements, flag users and add other moderators."
+            ? "CRs can approve or reject uploads, publish announcements and flag students — all only for your batch. A batch can have at most 2 CRs."
             : "They'll go back to a regular student account. This is recorded in the security logs."
         }
       >
         <div className="flex justify-end gap-2">
           <button onClick={() => setConfirmRole(null)} className="btn-ghost">Cancel</button>
           <button onClick={changeRole} className={confirmRole === "admin" ? "btn-primary" : "btn-danger"}>
-            {confirmRole === "admin" ? <><ShieldCheck size={15} /> Make moderator</> : <><ShieldOff size={15} /> Remove</>}
+            {confirmRole === "admin" ? <><ShieldCheck size={15} /> Make CR</> : <><ShieldOff size={15} /> Remove</>}
           </button>
         </div>
       </Modal>

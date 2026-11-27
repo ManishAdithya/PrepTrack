@@ -27,3 +27,16 @@ export function branchFromRoll(roll) {
   const m = String(roll || "").toUpperCase().match(/([A-Z]{2,5})\d{5}$/);
   return m ? m[1] : null;
 }
+
+// "AM.SC.U4CSE23140" -> 2023 (the joining batch; the two digits before the last three)
+export function batchFromRoll(roll) {
+  const m = String(roll || "").toUpperCase().match(/[A-Z]{2,5}(\d{2})\d{3}$/);
+  return m ? 2000 + Number(m[1]) : null;
+}
+
+// Each batch can have at most this many CRs (admins)
+export const MAX_CRS_PER_BATCH = Number(process.env.MAX_CRS_PER_BATCH || 2);
+
+// The group a user belongs to. Everything a user can see or manage is limited to it:
+// students of one branch + joining batch never see another batch's data.
+export const scopeOf = (user) => ({ branch: user.branch, batch: user.batch });

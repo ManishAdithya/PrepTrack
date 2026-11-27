@@ -20,8 +20,14 @@ connectDB();
 
 const app = express();
 
-// ✅ Fix: Apply CORS ONLY ONCE
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+// CORS: allow the frontend on any local port (Vite moves to 3001, 3002... if 3000 is busy),
+// plus FRONTEND_URL from .env for a deployed frontend.
+const isAllowedOrigin = (origin) =>
+  !origin ||
+  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+  origin === process.env.FRONTEND_URL;
+
+app.use(cors({ origin: (origin, cb) => cb(null, isAllowedOrigin(origin)), credentials: true }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

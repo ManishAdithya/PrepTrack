@@ -11,6 +11,7 @@ const discussionSchema = new mongoose.Schema({
   body: { type: String },
   author: { type: String, required: true },
   branch: { type: String },
+  batch: { type: Number },
   tags: { type: [String], default: [] },
   comments: { type: [commentSchema], default: [] },   // ⭐ ADDED
   commentsCount: { type: Number, default: 0 },

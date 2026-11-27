@@ -5,8 +5,13 @@ import { fileURLToPath } from "url";
 import bucket from "../config/firebase.js";
 import { v4 as uuidv4 } from "uuid";
 import Material from "../models/Material.js";
-import { getRules } from "../config/community.js";
+import mongoose from "mongoose";
+import { getRules, scopeOf } from "../config/community.js";
 import { awardApprovalPoints, getScore } from "../utils/points.js";
+
+// A material inside the user's own branch + batch, or null (other batches' uploads answer "not found")
+const findInScope = (id, user) =>
+  mongoose.isValidObjectId(id) ? Material.findOne({ _id: id, ...scopeOf(user) }) : null;
 
 // Where uploads go when Firebase isn't configured (Backend/storage)
 export const LOCAL_STORAGE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "storage");
@@ -34,15 +39,20 @@ const forStudent = (m, userId) => {
 export const uploadMaterial = async (req, res) => {
   try {
     const { title, type, examDate } = req.body;
-    const branch = req.user.branch || req.body.branch;
+    // Always the uploader's own branch + batch (never taken from the request)
+    const { branch, batch } = scopeOf(req.user);
 
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ message: "Please give the material a title." });
+    }
 
-    // block exact duplicates (same title in the same branch)
+    // block exact duplicates (same title in the same branch + batch)
     const duplicate = await Material.findOne({
       branch,
+      batch,
       title: { $regex: `^${escapeRegex(title.trim())}$`, $options: "i" },
       status: { $ne: "rejected" },
     });
@@ -87,6 +97,7 @@ export const uploadMaterial = async (req, res) => {
     const material = new Material({
       title: title.trim(),
       branch,
+      batch,
       type,
       uploadedBy: req.user.name,
       uploaderId: req.user.id,
@@ -118,7 +129,7 @@ export const uploadMaterial = async (req, res) => {
 export const getAvailableMaterials = async (req, res) => {
   try {
     const materials = await Material.find({
-      branch: req.user.branch,
+      ...scopeOf(req.user),
 
       // Students can see ONLY: pending, approved, revision (not rejected or reported)
       status: { $in: ["approved", "pending", "revision"] },
@@ -140,7 +151,7 @@ export const getAvailableMaterials = async (req, res) => {
 // ===============================
 export const toggleUpvote = async (req, res) => {
   try {
-    const material = await Material.findById(req.params.id);
+    const material = await findInScope(req.params.id, req.user);
     if (!material) return res.status(404).json({ message: "Material not found" });
 
     if (String(material.uploaderId) === String(req.user.id)) {
@@ -181,7 +192,7 @@ export const reportMaterial = async (req, res) => {
     const reason = String(req.body.reason || "").trim();
     if (!reason) return res.status(400).json({ message: "Please give a reason." });
 
-    const material = await Material.findById(req.params.id);
+    const material = await findInScope(req.params.id, req.user);
     if (!material) return res.status(404).json({ message: "Material not found" });
 
     if (material.reports.some((r) => String(r.userId) === String(req.user.id))) {
@@ -208,7 +219,8 @@ export const reportMaterial = async (req, res) => {
 // ===============================
 export const getAllMaterials = async (req, res) => {
   try {
-    const materials = await Material.find().sort({ createdAt: -1 }).lean();
+    // A CR reviews only their own batch's uploads
+    const materials = await Material.find(scopeOf(req.user)).sort({ createdAt: -1 }).lean();
     res.status(200).json(
       materials.map(({ upvotes = [], ...m }) => ({ ...m, upvoteCount: upvotes.length }))
     );
@@ -226,7 +238,12 @@ export const updateMaterialStatus = async (req, res) => {
     const { id } = req.params;
     const { status, reviewNotes } = req.body;
 
-    const material = await Material.findById(id);
+    const allowed = ["pending", "approved", "rejected", "revision", "reported"];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const material = await findInScope(id, req.user);
     if (!material)
       return res.status(404).json({ message: "Material not found" });
 

@@ -9,11 +9,11 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Public: List all
-router.get("/", getDiscussions);
+// Logged-in users: list their batch's discussions
+router.get("/", authMiddleware, getDiscussions);
 
-// Public: Get one discussion
-router.get("/:id", getDiscussionById);
+// Logged-in users: one discussion from their batch
+router.get("/:id", authMiddleware, getDiscussionById);
 
 // Students: Create discussion
 router.post("/", authMiddleware, createDiscussion);
