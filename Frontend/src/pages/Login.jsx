@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, EyeOff, Hash, Lock, ArrowRight, Loader2, FlaskConical } from "lucide-react";
+import { Eye, EyeOff, Hash, Lock, ArrowRight, Loader2, FlaskConical, UserPlus } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { DEMO_MODE } from "../api";
 import AuthShell from "../components/AuthShell.jsx";
@@ -43,6 +43,20 @@ export default function Login() {
     <AuthShell>
       <h2 className="text-2xl font-bold text-white sm:text-3xl">Sign in</h2>
       <p className="mt-1 text-sm text-zinc-400">Use your roll number. CRs sign in the same way.</p>
+
+      {/* not shown right after signing up, when the roll number is already filled in */}
+      {!location.state?.rollNumber && (
+        <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-accent/25 bg-accent/[0.07] px-3.5 py-3 text-sm text-zinc-200">
+          <UserPlus size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+          <p>
+            <b className="text-white">First time here?</b> Please{" "}
+            <Link to="/signup" className="font-semibold text-accent hover:underline">
+              sign up
+            </Link>{" "}
+            first, then sign in.
+          </p>
+        </div>
+      )}
 
       <motion.form
         key={shake}
