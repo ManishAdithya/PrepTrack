@@ -99,6 +99,7 @@ export const getOverview = async (req, res) => {
       users,
       signupRows,
       logins,
+      failures,
       materials,
       subjects,
       discussions,
@@ -120,6 +121,8 @@ export const getOverview = async (req, res) => {
       ]),
       // sign-ins of the last 30 days (counted below, only for class members that still exist)
       SecurityLog.find({ eventType: "Login Success", createdAt: { $gte: since(30) } }, { userId: 1, createdAt: 1 }).lean(),
+      // failed sign-ins of the last 30 days, for the sign-in log
+      SecurityLog.find({ eventType: "Login Failure", createdAt: { $gte: since(30) } }, { userId: 1, createdAt: 1, details: 1 }).lean(),
       Material.find(scope, { title: 1, branch: 1, batch: 1, semester: 1, subjectId: 1, subject: 1, type: 1, isLink: 1, fileUrl: 1, status: 1, approvedBy: 1, uploaderId: 1, upvotes: 1, reports: 1, createdAt: 1 }).lean(),
       Subject.find(scope).sort({ semester: 1, name: 1 }).lean(),
       Discussion.find(scope, { title: 1, author: 1, authorId: 1, tags: 1, comments: 1, createdAt: 1 }).lean(),
@@ -277,6 +280,21 @@ export const getOverview = async (req, res) => {
       })
       .sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
 
+    // ---- sign-in log: who signed in (or failed to) and when, newest first ----
+    const person = (u) => ({ name: u.name || shown(u), displayName: u.displayName || "", rollNumber: u.rollNumber || "", role: u.role });
+    const signIns = [
+      ...live.map((l) => ({ _id: l._id, ok: true, at: l.createdAt, ...person(byId.get(String(l.userId))) })),
+      ...failures
+        .filter((l) => !l.userId || byId.has(String(l.userId)))
+        .map((l) =>
+          l.userId
+            ? { _id: l._id, ok: false, at: l.createdAt, reason: "Wrong password", ...person(byId.get(String(l.userId))) }
+            : { _id: l._id, ok: false, at: l.createdAt, reason: "No such account", name: "Unknown account", displayName: "", rollNumber: String(l.details || "").replace(/^Unknown login:\s*/, ""), role: null }
+        ),
+    ]
+      .sort((a, b) => new Date(b.at) - new Date(a.at))
+      .slice(0, 300);
+
     // ---- exams ----
     const upcoming = exams.filter((e) => new Date(e.date) >= now);
     const examTypes = Object.fromEntries(tally(exams, (e) => e.type));
@@ -385,6 +403,7 @@ export const getOverview = async (req, res) => {
       announcements30: notifications.filter((n) => n.createdAt >= since(30)).length,
       leaderboard: { xpTotal, flagged: classBoard.filter((b) => b.flagged).length, top: topXp },
       security: { failed7, locks30, resets30, lockedNow, mustChange },
+      signIns,
       xpTotal,
       storage: { dataMB, usedMB: storageMB, limitMB: DB_LIMIT_MB },
       feedback: { new: feedbackNew, total: feedback.length, byKind: fbKinds, byStatus: fbStatus },

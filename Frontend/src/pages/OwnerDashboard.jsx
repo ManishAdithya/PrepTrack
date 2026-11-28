@@ -361,6 +361,123 @@ function StudentRoster({ roster }) {
   );
 }
 
+// Who signed in (or tried to) and when, newest first, grouped by day
+const SIGNIN_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "ok", label: "Signed in" },
+  { value: "failed", label: "Failed" },
+];
+const dayLabel = (d) => {
+  const day = new Date(d).toDateString();
+  if (day === new Date().toDateString()) return "Today";
+  if (day === new Date(Date.now() - 86400000).toDateString()) return "Yesterday";
+  return new Date(d).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+};
+const clock = (d) => new Date(d).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+
+function SignInLog({ events }) {
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [limit, setLimit] = useState(40);
+  const rows = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return events.filter(
+      (e) =>
+        (filter === "all" || (filter === "ok" ? e.ok : !e.ok)) &&
+        (!s || [e.name, e.displayName, e.rollNumber].some((v) => (v || "").toLowerCase().includes(s)))
+    );
+  }, [events, q, filter]);
+  const people = useMemo(() => new Set(events.filter((e) => e.ok).map((e) => e.rollNumber)).size, [events]);
+  const failed = events.filter((e) => !e.ok).length;
+
+  const groups = [];
+  for (const e of rows.slice(0, limit)) {
+    const label = dayLabel(e.at);
+    if (groups.at(-1)?.label !== label) groups.push({ label, items: [] });
+    groups.at(-1).items.push(e);
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setLimit(40);
+          }}
+          placeholder="Search name or roll number"
+          className="input !py-2 min-w-0 flex-1 text-sm sm:max-w-xs"
+          aria-label="Search sign-ins"
+        />
+        <div className="flex rounded-lg border border-white/[0.08] p-0.5 text-xs" role="group" aria-label="Show">
+          {SIGNIN_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => {
+                setFilter(f.value);
+                setLimit(40);
+              }}
+              aria-pressed={filter === f.value}
+              className={`rounded-md px-2.5 py-1.5 font-semibold ${filter === f.value ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-zinc-500">
+        {people} student{people === 1 ? "" : "s"} signed in · {events.length - failed} sign-in{events.length - failed === 1 ? "" : "s"} · {failed} failed
+      </p>
+
+      {rows.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-400">{events.length ? "Nothing matches." : "No sign-ins in the last 30 days."}</p>
+      ) : (
+        <div className="mt-2 max-h-[480px] overflow-auto rounded-xl border border-white/[0.06]">
+          {groups.map((g) => (
+            <div key={g.label}>
+              <div className="sticky top-0 z-10 bg-ink-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                {g.label} · {g.items.length}
+              </div>
+              <ul>
+                {g.items.map((e) => (
+                  <li key={e._id} className="flex items-center gap-3 border-t border-white/[0.06] px-3 py-2 text-sm">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: e.ok ? STATUS.good : STATUS.critical }}
+                      aria-label={e.ok ? "Signed in" : "Failed"}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-semibold text-white">{e.name}</span>
+                        {e.role === "admin" && <span className="rounded bg-accent px-1.5 text-[10px] font-bold text-black">CR</span>}
+                        {e.displayName && <span className="text-[11px] text-zinc-500">“{e.displayName}”</span>}
+                      </div>
+                      <div className="truncate font-mono text-[11px] text-zinc-500">
+                        {e.rollNumber}
+                        {!e.ok && <span className="font-sans" style={{ color: STATUS.serious }}> · {e.reason}</span>}
+                      </div>
+                    </div>
+                    <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-zinc-400" title={new Date(e.at).toLocaleString("en-IN")}>
+                      {clock(e.at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          {rows.length > limit && (
+            <button type="button" onClick={() => setLimit((n) => n + 60)} className="w-full border-t border-white/[0.06] py-2 text-xs font-semibold text-accent hover:bg-white/[0.03]">
+              Show more ({rows.length - limit} left)
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function OwnerDashboard() {
   const [d, setD] = useState(null);
   const [error, setError] = useState(null);
@@ -605,6 +722,10 @@ export default function OwnerDashboard() {
 
             <Panel title="All students" sub={`Everyone in ${className}, with their uploads, forum activity and XP`}>
               <StudentRoster roster={d.users.roster || []} />
+            </Panel>
+
+            <Panel title="Sign-ins" sub="Who signed in, and failed attempts · last 30 days">
+              <SignInLog events={d.signIns || []} />
             </Panel>
 
             {/* forum */}
