@@ -10,8 +10,8 @@ import Feedback from "../models/Feedback.js";
 import Subject from "../models/Subject.js";
 import { getRules, branchFromRoll, batchFromRoll } from "../config/community.js";
 
-// Owner dashboard: platform-wide totals and trends. Class-level numbers only —
-// no individual student's login history.
+// Owner dashboard: totals and trends for the class, plus the class roster
+// (each student's uploads, forum activity, XP and last sign-in in the past 30 days).
 
 const TZ = "Asia/Kolkata";
 const DAY = 86400000;
@@ -111,7 +111,7 @@ export const getOverview = async (req, res) => {
       dbStats,
       feedback,
     ] = await Promise.all([
-      User.find(members, { name: 1, displayName: 1, role: 1, branch: 1, batch: 1, seed: 1, hideFromLeaderboard: 1, mustChangePassword: 1, lockedUntil: 1 }).lean(),
+      User.find(members, { name: 1, displayName: 1, email: 1, rollNumber: 1, role: 1, branch: 1, batch: 1, seed: 1, hideFromLeaderboard: 1, mustChangePassword: 1, lockedUntil: 1 }).lean(),
       User.aggregate([
         { $match: members },
         { $addFields: { created: createdFromId } },
@@ -243,6 +243,40 @@ export const getOverview = async (req, res) => {
       .slice(0, 5);
     const forumPeople = new Set([...posters, ...commenters].filter((id) => byId.has(id))).size;
 
+    // ---- every student in the class, for the owner's roster ----
+    const lastSeen = new Map();
+    for (const l of live) {
+      const id = String(l.userId);
+      if (!lastSeen.has(id) || l.createdAt > lastSeen.get(id)) lastSeen.set(id, l.createdAt);
+    }
+    const postsBy = tally(discussions.filter((dsc) => dsc.authorId), (dsc) => String(dsc.authorId));
+    const repliesBy = tally(
+      discussions.flatMap((dsc) => (dsc.comments || []).filter((c) => !c.removed && c.authorId)),
+      (c) => String(c.authorId)
+    );
+    const roster = users
+      .map((u) => {
+        const id = String(u._id);
+        return {
+          _id: u._id,
+          name: u.name || "",
+          displayName: u.displayName || "",
+          rollNumber: u.rollNumber || "",
+          email: u.email || "",
+          role: u.role,
+          joined: new Date(parseInt(id.slice(0, 8), 16) * 1000),
+          lastSeen: lastSeen.get(id) || null,
+          uploads: upCount.get(id) || 0,
+          live: liveCount.get(id) || 0,
+          xp: xpOf.get(id)?.score || 0,
+          posts: postsBy.get(id) || 0,
+          replies: repliesBy.get(id) || 0,
+          hidden: !!u.hideFromLeaderboard,
+          locked: !!(u.lockedUntil && new Date(u.lockedUntil) > now),
+        };
+      })
+      .sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
+
     // ---- exams ----
     const upcoming = exams.filter((e) => new Date(e.date) >= now);
     const examTypes = Object.fromEntries(tally(exams, (e) => e.type));
@@ -311,6 +345,7 @@ export const getOverview = async (req, res) => {
         signups: dailySeries(signupRows, 60),
         dailyActive: dailySeries(loginRows, 30),
         classes: classRows,
+        roster,
       },
       content: {
         total: materials.length,

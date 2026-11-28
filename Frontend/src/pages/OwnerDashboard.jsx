@@ -39,6 +39,15 @@ const TYPES = [
 const shortDay = (k) => new Date(k + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 const shortDate = (d) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
+// "just now", "3 h ago", "yesterday", "5 days ago"
+const ago = (d) => {
+  const mins = Math.round((Date.now() - new Date(d)) / 60000);
+  if (mins < 60) return mins <= 1 ? "just now" : `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? "yesterday" : `${days} days ago`;
+};
 
 function Panel({ title, sub, children, className = "", right }) {
   return (
@@ -250,6 +259,104 @@ function SubjectsBySemester({ semesters, noSemester }) {
         </div>
       )}
       {noSemester?.total > 0 && <p className="mt-3 text-xs text-zinc-500">{noSemester.total} older upload{noSemester.total > 1 ? "s have" : " has"} no semester and isn't counted above.</p>}
+    </div>
+  );
+}
+
+// Every student in the class with what they've done; search and sort
+const ROSTER_SORTS = [
+  { value: "roll", label: "Roll no.", by: (a, b) => a.rollNumber.localeCompare(b.rollNumber) },
+  { value: "name", label: "Name", by: (a, b) => a.name.localeCompare(b.name) },
+  { value: "xp", label: "XP", by: (a, b) => b.xp - a.xp || b.uploads - a.uploads },
+  { value: "uploads", label: "Uploads", by: (a, b) => b.uploads - a.uploads || b.xp - a.xp },
+  { value: "seen", label: "Last sign-in", by: (a, b) => new Date(b.lastSeen || 0) - new Date(a.lastSeen || 0) },
+];
+
+function StudentRoster({ roster }) {
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState("roll");
+  const rows = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    const list = s
+      ? roster.filter((r) => [r.name, r.displayName, r.rollNumber, r.email].some((v) => v.toLowerCase().includes(s)))
+      : roster;
+    return [...list].sort(ROSTER_SORTS.find((o) => o.value === sort).by);
+  }, [roster, q, sort]);
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name, roll number or email"
+          className="input !py-2 min-w-0 flex-1 text-sm sm:max-w-xs"
+          aria-label="Search students"
+        />
+        <label className="flex items-center gap-2 text-xs text-zinc-500">
+          Sort by
+          <select value={sort} onChange={(e) => setSort(e.target.value)} className="input !w-auto !py-2 text-sm">
+            {ROSTER_SORTS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="mt-2 text-xs text-zinc-500">
+        {rows.length === roster.length ? `${roster.length} students` : `${rows.length} of ${roster.length} students`}
+      </p>
+
+      {rows.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-400">{roster.length ? "No student matches that search." : "Nobody has signed up yet."}</p>
+      ) : (
+        <div className="mt-2 max-h-[560px] overflow-auto rounded-xl border border-white/[0.06]">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="sticky top-0 z-10 bg-ink-900 text-[11px] uppercase tracking-wider text-zinc-500">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Student</th>
+                <th className="px-3 py-2 font-semibold">Roll number</th>
+                <th className="px-3 py-2 font-semibold">Joined</th>
+                <th className="px-3 py-2 font-semibold">Last sign-in</th>
+                <th className="px-3 py-2 text-right font-semibold">Uploads</th>
+                <th className="px-3 py-2 text-right font-semibold">Forum</th>
+                <th className="px-3 py-2 text-right font-semibold">XP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r._id} className="border-t border-white/[0.06] align-top">
+                  <td className="px-3 py-2.5">
+                    <div className="flex flex-wrap items-center gap-1.5 font-semibold text-white">
+                      {r.name || "—"}
+                      {r.role === "admin" && <span className="rounded bg-accent px-1.5 text-[10px] font-bold text-black">CR</span>}
+                      {r.locked && <span className="rounded px-1.5 text-[10px] font-bold" style={{ background: STATUS.critical }}>Locked</span>}
+                    </div>
+                    <div className="text-[11px] text-zinc-500">
+                      {r.displayName ? `Shown as “${r.displayName}”` : "No display name yet"}
+                      {r.hidden && " · hidden on leaderboard"}
+                    </div>
+                    <div className="truncate text-[11px] text-zinc-500">{r.email}</div>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-zinc-300">{r.rollNumber}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{shortDate(r.joined)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{r.lastSeen ? ago(r.lastSeen) :<span className="text-zinc-600">not in 30 days</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
+                    <span className={r.uploads ? "text-white" : "text-zinc-600"}>{r.uploads}</span>
+                    {r.uploads > 0 && <div className="text-[11px] text-zinc-500">{r.live} live</div>}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
+                    <span className={r.posts + r.replies ? "text-white" : "text-zinc-600"}>{r.posts + r.replies}</span>
+                    {r.posts + r.replies > 0 && <div className="text-[11px] text-zinc-500">{r.posts} asked · {r.replies} {r.replies === 1 ? "reply" : "replies"}</div>}
+                  </td>
+                  <td className={`whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums ${r.xp ? "text-white" : "text-zinc-600"}`}>{r.xp}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -495,6 +602,10 @@ export default function OwnerDashboard() {
                 />
               </Panel>
             </div>
+
+            <Panel title="All students" sub={`Everyone in ${className}, with their uploads, forum activity and XP`}>
+              <StudentRoster roster={d.users.roster || []} />
+            </Panel>
 
             {/* forum */}
             <div className="grid gap-5 lg:grid-cols-3">
