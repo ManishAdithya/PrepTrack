@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlertTriangle, AlertOctagon, Info, RefreshCw, ArrowLeft } from "lucide-react";
+import { AlertTriangle, AlertOctagon, Info, RefreshCw, ArrowLeft, ShieldCheck } from "lucide-react";
 import API from "../api";
 import { Brand } from "../components/NavSidebar.jsx";
 import AccountMenu from "../components/AccountMenu.jsx";
 import AuroraBackground from "../components/AuroraBackground.jsx";
 import FeedbackInbox from "../components/FeedbackInbox.jsx";
+import Segmented from "../components/ui/Segmented.jsx";
 import Skeleton from "../components/ui/Skeleton.jsx";
 import { container, item } from "../components/ui/motion.js";
 import { examWhen, relative } from "../utils/exams.js";
@@ -19,14 +20,35 @@ const STATUS = { good: "#0ca30c", warning: "#fab219", serious: "#ec835a", critic
 const AXIS = { fill: "#a1a1aa", fontSize: 11 };
 const GRID = "rgba(255,255,255,0.06)";
 
-const shortDay = (k) => new Date(k + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+// what was uploaded: a shared link or a file of some kind
+const KINDS = [
+  { key: "link", label: "Links" },
+  { key: "pdf", label: "PDFs" },
+  { key: "ppt", label: "PPTs" },
+  { key: "photo", label: "Photos" },
+  { key: "doc", label: "Word" },
+  { key: "file", label: "Other files" },
+];
+const TYPES = [
+  { key: "note", label: "Notes" },
+  { key: "ppt", label: "Slides" },
+  { key: "pyq", label: "PYQs" },
+  { key: "other", label: "Other" },
+];
 
-function Panel({ title, sub, children, className = "" }) {
+const shortDay = (k) => new Date(k + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+const shortDate = (d) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
+
+function Panel({ title, sub, children, className = "", right }) {
   return (
     <motion.section variants={item} className={`rounded-2xl border border-white/[0.08] bg-ink-800 p-4 sm:p-5 ${className}`}>
-      <div className="mb-3">
-        <h2 className="font-display text-base font-bold text-white">{title}</h2>
-        {sub && <p className="text-xs text-zinc-500">{sub}</p>}
+      <div className="mb-3 flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-base font-bold text-white">{title}</h2>
+          {sub && <p className="text-xs text-zinc-500">{sub}</p>}
+        </div>
+        {right}
       </div>
       {children}
     </motion.section>
@@ -39,6 +61,30 @@ function Tile({ label, value, sub }) {
       <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{label}</div>
       <div className="mt-1 font-display text-3xl font-bold text-white">{value}</div>
       {sub && <div className="mt-0.5 truncate text-xs text-zinc-400">{sub}</div>}
+    </div>
+  );
+}
+
+// small labelled number inside a panel
+function Stat({ label, value, note }) {
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-ink-900 p-3">
+      <dt className="text-xs text-zinc-500">{label}</dt>
+      <dd className="font-display text-2xl font-bold tabular-nums text-white">{value}</dd>
+      {note && <dd className="text-[11px] text-zinc-500">{note}</dd>}
+    </div>
+  );
+}
+
+// label · count chips
+function Chips({ items }) {
+  return (
+    <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+      {items.map(([label, n]) => (
+        <span key={label} className="rounded-full border border-white/10 px-2.5 py-1">
+          {label} <span className="font-semibold text-white">{n}</span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -84,11 +130,129 @@ function StatusBar({ parts }) {
   );
 }
 
+// ranked list with a thin bar showing each row's share of the top value
+function RankList({ rows, empty }) {
+  if (!rows.length) return <p className="text-sm text-zinc-400">{empty}</p>;
+  const top = Math.max(...rows.map((r) => r.value), 1);
+  return (
+    <ol className="space-y-2.5">
+      {rows.map((r, i) => (
+        <li key={r.key ?? i} className="text-sm">
+          <div className="flex items-baseline gap-2">
+            <span className="w-4 shrink-0 text-xs tabular-nums text-zinc-500">{i + 1}</span>
+            <span className="min-w-0 flex-1 truncate text-zinc-100">{r.label}</span>
+            <span className="shrink-0 tabular-nums font-semibold text-white">{r.valueLabel ?? r.value}</span>
+          </div>
+          {r.sub && <div className="ml-6 text-[11px] text-zinc-500">{r.sub}</div>}
+          <div className="ml-6 mt-1 h-1 overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-full rounded-full" style={{ width: `${(r.value / top) * 100}%`, background: ACCENT }} />
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 const LEVEL = {
   critical: { icon: AlertOctagon, color: STATUS.critical, label: "Critical" },
   serious: { icon: AlertTriangle, color: STATUS.serious, label: "Needs action" },
   warning: { icon: Info, color: STATUS.warning, label: "Heads up" },
 };
+
+// Every subject the CRs added, semester by semester, with what was uploaded under each
+function SubjectsBySemester({ semesters, noSemester }) {
+  const withSubjects = semesters.filter((s) => s.subjects.length || s.unsorted);
+  const busiest = [...withSubjects].sort((a, b) => b.uploads - a.uploads)[0];
+  const [sem, setSem] = useState(busiest?.semester || 1);
+  const row = semesters.find((s) => s.semester === sem) || semesters[0];
+  const lines = [...row.subjects, ...(row.unsorted ? [{ _id: "unsorted", name: "Unsorted", unsorted: true, ...row.unsorted }] : [])];
+  // only show file columns that have something in this semester (links always)
+  const cols = KINDS.filter((k) => k.key === "link" || lines.some((l) => l.kinds[k.key]));
+  const sum = (key) => lines.reduce((t, l) => t + (l.kinds[key] || 0), 0);
+  const total = lines.reduce((t, l) => t + l.total, 0);
+
+  return (
+    <div>
+      <Segmented
+        size="sm"
+        value={sem}
+        onChange={setSem}
+        options={semesters.map((s) => ({ value: s.semester, label: `S${s.semester}`, count: s.subjects.length || null }))}
+      />
+      <p className="mt-3 text-xs text-zinc-500">
+        S{row.semester}: {row.subjects.length} subject{row.subjects.length === 1 ? "" : "s"} · {total} upload{total === 1 ? "" : "s"}
+        {row.subjects.length > 0 && ` · ${row.subjects.filter((s) => s.total === 0).length} with nothing yet`}
+      </p>
+
+      {lines.length === 0 ? (
+        <p className="mt-3 rounded-xl border border-white/[0.06] bg-ink-900 p-4 text-sm text-zinc-400">The CRs haven't added any S{row.semester} subjects yet.</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[560px] text-left text-sm">
+            <thead className="text-[11px] uppercase tracking-wider text-zinc-500">
+              <tr>
+                <th className="pb-2 font-semibold">Subject</th>
+                {cols.map((c) => (
+                  <th key={c.key} className="pb-2 text-right font-semibold">
+                    {c.label}
+                  </th>
+                ))}
+                <th className="pb-2 text-right font-semibold">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l) => (
+                <tr key={l._id} className="border-t border-white/[0.06] align-top">
+                  <td className="py-2.5 pr-3">
+                    <div className={`font-semibold ${l.unsorted ? "text-zinc-400" : "text-white"}`}>
+                      {l.name} {l.code && <span className="ml-1 text-xs font-normal text-zinc-500">{l.code}</span>}
+                    </div>
+                    <div className="text-[11px] text-zinc-500">
+                      {l.unsorted
+                        ? "Files whose subject was removed"
+                        : `Added by ${l.createdBy || "a CR"}${l.createdAt ? ` · ${shortDate(l.createdAt)}` : ""}`}
+                      {l.lastUpload && ` · last upload ${shortDate(l.lastUpload)}`}
+                    </div>
+                    {l.total > 0 && (
+                      <div className="mt-1 text-[11px] text-zinc-500">
+                        {TYPES.filter((t) => l.types[t.key]).map((t) => `${t.label} ${l.types[t.key]}`).join(" · ")}
+                      </div>
+                    )}
+                  </td>
+                  {cols.map((c) => (
+                    <td key={c.key} className={`py-2.5 text-right tabular-nums ${l.kinds[c.key] ? "text-zinc-100" : "text-zinc-600"}`}>
+                      {l.kinds[c.key] || "–"}
+                    </td>
+                  ))}
+                  <td className="py-2.5 text-right">
+                    <div className={`font-semibold tabular-nums ${l.total ? "text-white" : "text-zinc-600"}`}>{l.total || "0"}</div>
+                    {l.total > 0 && (
+                      <div className="text-[11px] text-zinc-500">
+                        {l.live} live{l.pending ? ` · ${l.pending} pending` : ""}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-white/15 text-zinc-300">
+                <td className="py-2.5 font-semibold">All of S{row.semester}</td>
+                {cols.map((c) => (
+                  <td key={c.key} className="py-2.5 text-right font-semibold tabular-nums">
+                    {sum(c.key)}
+                  </td>
+                ))}
+                <td className="py-2.5 text-right font-semibold tabular-nums text-white">{total}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+      {noSemester?.total > 0 && <p className="mt-3 text-xs text-zinc-500">{noSemester.total} older upload{noSemester.total > 1 ? "s have" : " has"} no semester and isn't counted above.</p>}
+    </div>
+  );
+}
 
 export default function OwnerDashboard() {
   const [d, setD] = useState(null);
@@ -107,14 +271,15 @@ export default function OwnerDashboard() {
   };
   useEffect(load, []);
 
-  const signupsCumulative = (() => {
+  const signupsCumulative = useMemo(() => {
     if (!d) return [];
     // signups only covers 60 days; start from the accounts that existed before that
     const before = d.users.students - d.users.signups.reduce((t, x) => t + x.n, 0);
     let run = before;
     return d.users.signups.map((x) => ({ day: x.day, total: (run += x.n) }));
-  })();
+  }, [d]);
   const forumWeeks = d ? d.forum.postsPerWeek.map((w, i) => ({ week: w.week, posts: w.n, comments: d.forum.commentsPerWeek[i]?.n || 0 })) : [];
+  const className = d?.classes?.length ? d.classes.join(", ") : "your class";
 
   return (
     <div className="relative min-h-screen text-zinc-100">
@@ -155,17 +320,20 @@ export default function OwnerDashboard() {
               <Link to="/" className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-white">
                 <ArrowLeft size={13} /> Back to the app
               </Link>
-              <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">Everything at a glance</h1>
-              <p className="text-sm text-zinc-400">Totals and trends across all classes. No individual student's logins.</p>
+              <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">{className} at a glance</h1>
+              <p className="mt-1 flex items-start gap-1.5 text-sm text-zinc-400">
+                <ShieldCheck size={15} className="mt-0.5 shrink-0 text-accent" />
+                You're the owner and main admin over the class, so your account isn't counted in any of these numbers.
+              </p>
             </motion.div>
 
             {/* headline numbers */}
             <motion.div variants={item} className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-              <Tile label="Students" value={d.users.students} sub={`${d.users.crs} CRs${d.users.demoAccounts ? ` · ${d.users.demoAccounts} demo` : ""}`} />
-              <Tile label="Active this week" value={d.users.active7} sub={`${d.users.students ? Math.round((d.users.active7 / d.users.students) * 100) : 0}% of students`} />
-              <Tile label="Uploads" value={d.content.total} sub={`${d.content.byStatus.pending} waiting for review`} />
-              <Tile label="Forum posts" value={d.forum.discussions} sub={`${forumWeeks.at(-1)?.comments || 0} comments this week`} />
-              <Tile label="Upcoming exams" value={d.exams.upcoming} sub={`${d.subjects ?? 0} subjects set up`} />
+              <Tile label="Students" value={d.users.students} sub={`${d.users.crs} CR${d.users.crs === 1 ? "" : "s"}${d.users.demoAccounts ? ` · ${d.users.demoAccounts} demo` : ""}`} />
+              <Tile label="Active this week" value={d.users.active7} sub={`${pct(d.users.active7, d.users.students)}% · ${d.users.activeToday} today`} />
+              <Tile label="Uploads" value={d.content.total} sub={`${d.content.byStatus.approved} live · ${d.content.byStatus.pending} pending`} />
+              <Tile label="Subjects" value={d.subjects} sub={`across ${d.subjectsBySemester.filter((s) => s.subjects.length).length} semesters`} />
+              <Tile label="Upcoming exams" value={d.exams.upcoming} sub={`${d.exams.thisWeek} this week`} />
             </motion.div>
 
             {/* needs attention */}
@@ -194,11 +362,82 @@ export default function OwnerDashboard() {
               )}
             </Panel>
 
-            <Panel title="Feedback inbox" sub={`Issues, ideas and comments sent from the app · ${d.feedback?.new || 0} new`}>
-              <FeedbackInbox />
+            {/* subjects per semester */}
+            <Panel title="Subjects by semester" sub="Every subject the CRs added, and what was uploaded under it (all statuses; “live” = approved)">
+              <SubjectsBySemester semesters={d.subjectsBySemester} noSemester={d.noSemester} />
             </Panel>
 
+            {/* uploads */}
             <div className="grid gap-5 lg:grid-cols-2">
+              <Panel title="Uploads" sub={`${d.content.total} total from ${d.content.uploaders} student${d.content.uploaders === 1 ? "" : "s"} · oldest waiting ${d.content.oldestPendingHours ? `${d.content.oldestPendingHours} h` : "—"}`}>
+                <StatusBar
+                  parts={[
+                    { label: "Approved", n: d.content.byStatus.approved, color: STATUS.good },
+                    { label: "Pending", n: d.content.byStatus.pending, color: STATUS.warning },
+                    { label: "Rejected", n: d.content.byStatus.rejected, color: STATUS.critical },
+                    { label: "Reported", n: d.content.byStatus.reported, color: STATUS.serious },
+                    { label: "Needs revision", n: d.content.byStatus.revision, color: STATUS.neutral },
+                  ]}
+                />
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">What was shared</div>
+                    <Chips items={KINDS.filter((k) => k.key === "link" || d.content.byKind[k.key]).map((k) => [k.label, d.content.byKind[k.key] || 0])} />
+                    {d.content.byKind.link > 0 && (
+                      <p className="mt-1.5 text-[11px] text-zinc-500">
+                        Links: {Object.entries(d.content.linkHosts).map(([h, n]) => `${h} ${n}`).join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Type</div>
+                    <Chips items={TYPES.map((t) => [t.label, d.content.byType[t.key] || 0])} />
+                  </div>
+                  <div>
+                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">How uploads went live</div>
+                    <Chips
+                      items={[
+                        ["CR approved", d.content.approvedBy.moderator],
+                        ["5 Helpful votes", d.content.approvedBy.community],
+                        ["Trusted uploader", d.content.approvedBy.trusted],
+                      ]}
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-500">
+                    {d.content.helpful} Helpful vote{d.content.helpful === 1 ? "" : "s"} given · {d.content.reports} report{d.content.reports === 1 ? "" : "s"} filed
+                  </p>
+                </div>
+              </Panel>
+
+              <Panel title="Top uploaders" sub="Most uploads, with how many went live and XP earned">
+                <RankList
+                  empty="No uploads yet."
+                  rows={d.content.topUploaders.map((u, i) => ({
+                    key: i,
+                    label: `${u.name}${u.role === "admin" ? " (CR)" : ""}`,
+                    value: u.uploads,
+                    valueLabel: `${u.uploads} upload${u.uploads === 1 ? "" : "s"}`,
+                    sub: `${u.live} live · ${u.xp} XP`,
+                  }))}
+                />
+              </Panel>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              <Panel title="Uploads per week" sub="Notes, slides and PYQs · last 12 weeks">
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={d.content.uploadsPerWeek} margin={{ left: -20, right: 8, top: 8 }}>
+                      <CartesianGrid stroke={GRID} vertical={false} />
+                      <XAxis dataKey="week" tickFormatter={shortDay} tick={AXIS} axisLine={false} tickLine={false} minTickGap={16} />
+                      <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
+                      <Tooltip content={<Tip fmt={(w) => `Week of ${shortDay(w)}`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                      <Bar dataKey="n" name="Uploads" fill={ACCENT} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+
               <Panel title="Daily active students" sub="Accounts that signed in each day · last 30 days">
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -218,9 +457,18 @@ export default function OwnerDashboard() {
                   </ResponsiveContainer>
                 </div>
               </Panel>
+            </div>
 
-              <Panel title="Students over time" sub="Total accounts · last 60 days">
-                <div className="h-56">
+            {/* students */}
+            <div className="grid gap-5 lg:grid-cols-3">
+              <Panel title="Students" sub={`${className} · ${d.users.crs} CR${d.users.crs === 1 ? "" : "s"}`} className="lg:col-span-2">
+                <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                  <Stat label="Signed up" value={d.users.students} note={`${d.users.students - d.users.crs} students + ${d.users.crs} CRs`} />
+                  <Stat label="Active today" value={d.users.activeToday} note={`${pct(d.users.activeToday, d.users.students)}% of the class`} />
+                  <Stat label="Active 30 days" value={d.users.active30} note={`${d.users.quiet30} haven't signed in`} />
+                  <Stat label="Picked a name" value={d.users.displayNames} note={`${d.users.hiddenFromLeaderboard} hide it on the leaderboard`} />
+                </dl>
+                <div className="mt-4 h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={signupsCumulative} margin={{ left: -20, right: 8, top: 8 }}>
                       <CartesianGrid stroke={GRID} vertical={false} />
@@ -231,28 +479,37 @@ export default function OwnerDashboard() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
+                <p className="mt-1 text-xs text-zinc-500">Students signed up · last 60 days</p>
               </Panel>
 
-              <Panel title="Uploads per week" sub="Notes, slides and PYQs · last 12 weeks">
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={d.content.uploadsPerWeek} margin={{ left: -20, right: 8, top: 8 }}>
-                      <CartesianGrid stroke={GRID} vertical={false} />
-                      <XAxis dataKey="week" tickFormatter={shortDay} tick={AXIS} axisLine={false} tickLine={false} minTickGap={16} />
-                      <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
-                      <Tooltip content={<Tip fmt={(w) => `Week of ${shortDay(w)}`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                      <Bar dataKey="n" name="Uploads" fill={ACCENT} radius={[4, 4, 0, 0]} maxBarSize={28} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <Panel title="Leaderboard" sub={`${d.leaderboard.xpTotal} XP earned in total${d.leaderboard.flagged ? ` · ${d.leaderboard.flagged} flagged` : ""}`}>
+                <RankList
+                  empty="Nobody has XP yet."
+                  rows={d.leaderboard.top.map((t, i) => ({
+                    key: i,
+                    label: `${t.name}${t.flagged ? " · flagged" : ""}`,
+                    value: t.score,
+                    valueLabel: `${t.score} XP`,
+                    sub: `${t.contributions} approved upload${t.contributions === 1 ? "" : "s"}`,
+                  }))}
+                />
               </Panel>
+            </div>
 
-              <Panel title="Forum activity per week" sub="New questions and comments · last 12 weeks">
-                <div className="mb-2 flex gap-4 text-xs text-zinc-300">
+            {/* forum */}
+            <div className="grid gap-5 lg:grid-cols-3">
+              <Panel title="Forum" sub={`${d.forum.people} student${d.forum.people === 1 ? "" : "s"} have posted or replied`} className="lg:col-span-2">
+                <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                  <Stat label="Questions" value={d.forum.discussions} />
+                  <Stat label="Replies" value={d.forum.comments} note={`${d.forum.avgReplies} per question`} />
+                  <Stat label="Unanswered" value={d.forum.unanswered} note={`${pct(d.forum.unanswered, d.forum.discussions)}% of questions`} />
+                  <Stat label="This week" value={forumWeeks.at(-1)?.posts || 0} note={`${forumWeeks.at(-1)?.comments || 0} replies`} />
+                </dl>
+                <div className="mb-2 mt-4 flex gap-4 text-xs text-zinc-300">
                   <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: SERIES.posts }} /> Questions</span>
-                  <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: SERIES.comments }} /> Comments</span>
+                  <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: SERIES.comments }} /> Replies</span>
                 </div>
-                <div className="h-52">
+                <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={forumWeeks} margin={{ left: -20, right: 8, top: 8 }}>
                       <CartesianGrid stroke={GRID} vertical={false} />
@@ -260,33 +517,40 @@ export default function OwnerDashboard() {
                       <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
                       <Tooltip content={<Tip fmt={(w) => `Week of ${shortDay(w)}`} />} cursor={{ stroke: "rgba(255,255,255,0.25)" }} />
                       <Line type="monotone" dataKey="posts" name="Questions" stroke={SERIES.posts} strokeWidth={2} dot={{ r: 3, strokeWidth: 0, fill: SERIES.posts }} />
-                      <Line type="monotone" dataKey="comments" name="Comments" stroke={SERIES.comments} strokeWidth={2} dot={{ r: 3, strokeWidth: 0, fill: SERIES.comments }} />
+                      <Line type="monotone" dataKey="comments" name="Replies" stroke={SERIES.comments} strokeWidth={2} dot={{ r: 3, strokeWidth: 0, fill: SERIES.comments }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
+                {d.forum.topTags.length > 0 && (
+                  <div className="mt-4">
+                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Popular tags</div>
+                    <Chips items={d.forum.topTags.map((t) => [`#${t.tag}`, t.n])} />
+                  </div>
+                )}
               </Panel>
 
-              <Panel title="Uploads by status" sub={`${d.content.total} total · oldest waiting ${d.content.oldestPendingHours ? `${d.content.oldestPendingHours} h` : "—"}`}>
-                <StatusBar
-                  parts={[
-                    { label: "Approved", n: d.content.byStatus.approved, color: STATUS.good },
-                    { label: "Pending", n: d.content.byStatus.pending, color: STATUS.warning },
-                    { label: "Rejected", n: d.content.byStatus.rejected, color: STATUS.critical },
-                    { label: "Reported", n: d.content.byStatus.reported, color: STATUS.serious },
-                    { label: "Needs revision", n: d.content.byStatus.revision, color: STATUS.neutral },
-                  ]}
+              <Panel title="Busiest threads" sub="Most replies">
+                <RankList
+                  empty="No questions yet."
+                  rows={d.forum.topThreads.map((t) => ({
+                    key: t._id,
+                    label: t.title,
+                    value: t.replies,
+                    valueLabel: `${t.replies}`,
+                    sub: `by ${t.author} · ${shortDate(t.createdAt)}`,
+                  }))}
                 />
-                <div className="mt-4 flex flex-wrap gap-2 text-xs text-zinc-400">
-                  <span className="rounded-full border border-white/10 px-2.5 py-1">Notes {d.content.byType.note || 0}</span>
-                  <span className="rounded-full border border-white/10 px-2.5 py-1">Slides {d.content.byType.ppt || 0}</span>
-                  <span className="rounded-full border border-white/10 px-2.5 py-1">PYQs {d.content.byType.pyq || 0}</span>
-                </div>
               </Panel>
-
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-3">
-              <Panel title="Upcoming exams" sub={`${d.exams.upcoming} upcoming · ${d.exams.total} posted in total`} className="lg:col-span-2">
+            {/* exams + announcements */}
+            <div className="grid gap-5 lg:grid-cols-2">
+              <Panel title="Exams" sub={`${d.exams.upcoming} upcoming · ${d.exams.past} past · ${d.exams.total} posted in total`}>
+                {Object.keys(d.exams.byType).length > 0 && (
+                  <div className="mb-3">
+                    <Chips items={Object.entries(d.exams.byType)} />
+                  </div>
+                )}
                 {d.exams.next.length === 0 ? (
                   <p className="text-sm text-zinc-400">No upcoming exams posted.</p>
                 ) : (
@@ -298,7 +562,9 @@ export default function OwnerDashboard() {
                             {e.subject} <span className="font-normal text-zinc-400">· {e.type}</span>
                           </div>
                           <div className="text-xs text-zinc-500">
-                            {e.branch} {e.batch} · {examWhen(e.date)}
+                            {examWhen(e.date)}
+                            {e.maxMarks ? ` · ${e.maxMarks} marks` : ""}
+                            {e.venue ? ` · ${e.venue}` : ""}
                           </div>
                         </div>
                         <span className="shrink-0 text-xs text-zinc-300">{relative(e.date)}</span>
@@ -308,51 +574,64 @@ export default function OwnerDashboard() {
                 )}
               </Panel>
 
-              <Panel title="Security" sub="Sign-ins and passwords">
-                <dl className="grid grid-cols-2 gap-3 text-sm">
-                  {[
-                    ["Failed sign-ins", d.security.failed7, "7 days"],
-                    ["Lockouts", d.security.locks30, "30 days"],
-                    ["Password resets", d.security.resets30, "30 days"],
-                    ["Locked now", d.security.lockedNow, "accounts"],
-                  ].map(([label, n, note]) => (
-                    <div key={label} className="rounded-xl border border-white/[0.06] bg-ink-900 p-3">
-                      <dt className="text-xs text-zinc-500">{label}</dt>
-                      <dd className="font-display text-2xl font-bold text-white">{n}</dd>
-                      <dd className="text-[11px] text-zinc-500">{note}</dd>
-                    </div>
-                  ))}
-                </dl>
+              <Panel title="Announcements" sub={`${d.announcements.total} sent · ${d.announcements.last30} in the last 30 days · ${d.announcements.highPriority} high priority`}>
+                <p className="mb-3 text-sm text-zinc-300">
+                  On average <span className="font-semibold text-white">{d.announcements.avgReadPct}%</span> of the class reads each announcement.
+                </p>
+                {d.announcements.latest.length === 0 ? (
+                  <p className="text-sm text-zinc-400">No announcements yet.</p>
+                ) : (
+                  <ul className="space-y-2.5">
+                    {d.announcements.latest.map((a) => (
+                      <li key={a._id} className="text-sm">
+                        <div className="flex items-start gap-2">
+                          <span className="min-w-0 flex-1 text-zinc-200">
+                            {a.priority && <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: STATUS.critical }}>High</span>}
+                            {a.message}
+                          </span>
+                          <span className="shrink-0 text-xs tabular-nums text-zinc-300">{a.readPct}% read</span>
+                        </div>
+                        <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/[0.06]">
+                          <div className="h-full rounded-full" style={{ width: `${a.readPct}%`, background: ACCENT }} />
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-zinc-500">
+                          {a.createdBy && `${a.createdBy} · `}
+                          {shortDate(a.createdAt)}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </Panel>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-3">
-              <Panel title="Classes" sub="Students and CRs per class" className="lg:col-span-2">
-                <table className="w-full text-left text-sm">
-                  <thead className="text-[11px] uppercase tracking-wider text-zinc-500">
-                    <tr>
-                      <th className="pb-2 font-semibold">Class</th>
-                      <th className="pb-2 text-right font-semibold">Students</th>
-                      <th className="pb-2 text-right font-semibold">CRs</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {d.users.classes.map((c) => (
-                      <tr key={`${c.branch}-${c.batch}`} className="border-t border-white/[0.06]">
-                        <td className="py-2 text-white">
-                          {c.branch} {c.batch}
-                        </td>
-                        <td className="py-2 text-right tabular-nums text-zinc-200">{c.students}</td>
-                        <td className="py-2 text-right tabular-nums" style={{ color: c.crs ? undefined : STATUS.critical }}>
-                          {c.crs || "none"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p className="mt-3 text-xs text-zinc-500">
-                  {d.xpTotal} XP earned in total · {d.users.active30} students active in the last 30 days
-                </p>
+            <Panel
+              title="Feedback inbox"
+              sub={`Issues, ideas and comments sent from the app · ${d.feedback.total} in total · ${d.feedback.new} new · ${d.feedback.byStatus?.resolved || 0} resolved`}
+              right={
+                d.feedback.total > 0 && (
+                  <Chips
+                    items={[
+                      ["Issues", d.feedback.byKind?.Issue || 0],
+                      ["Ideas", d.feedback.byKind?.Improvement || 0],
+                      ["Comments", d.feedback.byKind?.Comment || 0],
+                    ]}
+                  />
+                )
+              }
+            >
+              <FeedbackInbox />
+            </Panel>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              <Panel title="Security" sub="Sign-ins and passwords">
+                <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                  <Stat label="Failed sign-ins" value={d.security.failed7} note="7 days" />
+                  <Stat label="Lockouts" value={d.security.locks30} note="30 days" />
+                  <Stat label="Password resets" value={d.security.resets30} note="30 days" />
+                  <Stat label="Locked now" value={d.security.lockedNow} note="accounts" />
+                  <Stat label="Must change password" value={d.security.mustChange} note="after a CR reset" />
+                </dl>
               </Panel>
 
               <Panel title="Database storage" sub="MongoDB Atlas free tier">
