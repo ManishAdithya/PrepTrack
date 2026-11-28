@@ -7,6 +7,7 @@ import Topbar from "../components/Topbar.jsx";
 import MobileNav from "../components/MobileNav.jsx";
 import CommandPalette from "../components/CommandPalette.jsx";
 import AuroraBackground from "../components/AuroraBackground.jsx";
+import StarBar from "../components/StarBar.jsx";
 import { GameProvider } from "../context/GameContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -35,6 +36,7 @@ function Shell() {
         <Sidebar />
         <main className="min-w-0 flex-1 overflow-x-clip">
           <Topbar onOpenSearch={() => setSearchOpen(true)} />
+          <StarBar />
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 10 }}

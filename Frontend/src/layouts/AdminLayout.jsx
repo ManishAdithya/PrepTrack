@@ -6,6 +6,7 @@ import AdminTopbar from "../components/admin/AdminTopbar.jsx";
 import MobileNav from "../components/MobileNav.jsx";
 import CommandPalette from "../components/CommandPalette.jsx";
 import AuroraBackground from "../components/AuroraBackground.jsx";
+import StarBar from "../components/StarBar.jsx";
 
 const allLinks = adminSections.flatMap((s) => s.links);
 const mobileLinks = allLinks.slice(0, 5).map((l) => ({ ...l, short: l.short || l.label.split(" ")[0] }));
@@ -22,6 +23,7 @@ export default function AdminLayout() {
         <AdminSidebar />
         <main className="min-w-0 flex-1 overflow-x-clip">
           <AdminTopbar title={title} onOpenSearch={() => setSearchOpen(true)} />
+          <StarBar />
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 10 }}
