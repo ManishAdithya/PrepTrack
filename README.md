@@ -6,6 +6,10 @@ A study platform for one college class: notes, slides, previous year question pa
 
 It is currently open to the EEE 2024 batch at Amrita (roll numbers `AM.EN.U4EEE24###`). Each class only ever sees its own material, forum and leaderboard.
 
+![PrepTrack demo: signing up, the exam countdown, study materials, uploading, the forum, the leaderboard and the CR portal](docs/demo.gif)
+
+*A quick tour, sped up: the student side first, then the CR portal.*
+
 ---
 
 ## What it does
